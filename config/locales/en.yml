@@ -1,0 +1,23 @@
+en:
+  label_cosmosys_poris_project_profile: PORIS model
+  text_cosmosys_poris_project_profile: Project profile for PORIS systems, parameters, modes, values and commands.
+  text_cosmosys_poris_item_profile: PORIS model element. Parent/child containment is distinct from blocking relations between modes and values.
+  label_cosmosys_poris_sys: PORIS system
+  label_cosmosys_poris_param: PORIS parameter
+  label_cosmosys_poris_mode: PORIS mode
+  label_cosmosys_poris_value: PORIS value
+  label_cosmosys_poris_cmd: PORIS command
+  label_cosmosys_poris_metadata: PORIS attributes
+  label_cosmosys_poris_enum: Enumeration (discrete option)
+  label_cosmosys_poris_float: Floating-point value
+  label_cosmosys_poris_text: Text value
+  label_cosmosys_poris_view_scopes: PORIS viewer scope
+  label_cosmosys_poris_scope_node: Node
+  label_cosmosys_poris_scope_project: Project
+  label_cosmosys_poris_scope_node_down: Node & descendants
+  field_pr_src_label: PORIS source label
+  field_pr_value_kind: Value kind
+  field_pr_min: Minimum
+  field_pr_default: Default
+  field_pr_max: Maximum
+  field_pr_default_text: Default text

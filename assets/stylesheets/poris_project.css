@@ -1,0 +1,23 @@
+.poris-project-layout-with-diagram {
+  display: grid;
+  grid-template-columns: minmax(22em, 40em) minmax(0, 1fr);
+  gap: 1.5em;
+  align-items: start;
+}
+
+.poris-project-layout-with-diagram .poris-project-diagram {
+  min-width: 0;
+  overflow: auto;
+}
+
+.poris-project-layout-with-diagram .poris-project-diagram img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media screen and (max-width: 1100px) {
+  .poris-project-layout-with-diagram {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

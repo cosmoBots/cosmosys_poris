@@ -1,0 +1,30 @@
+<%= stylesheet_link_tag 'poris_viewer/style.css', plugin: 'cosmosys_poris' %>
+<%= stylesheet_link_tag 'poris_project.css', plugin: 'cosmosys_poris' %>
+
+<h2><%= l(:label_cosmosys_poris_project_profile) %>: <%= @project.name %></h2>
+<% if @issue %>
+  <nav class="poris-view-scopes" aria-label="<%= l(:label_cosmosys_poris_view_scopes) %>">
+    <% %w[node project node_down].each do |scope| %>
+      <%= link_to l("label_cosmosys_poris_scope_#{scope}"),
+                  project_poris_viewer_path(@project, scope: scope, issue_id: @issue.id),
+                  class: ('selected' if @scope == scope),
+                  aria: { current: (@scope == scope ? 'page' : nil) } %>
+    <% end %>
+  </nav>
+<% end %>
+<div class="poris-project-layout<%= ' poris-project-layout-with-diagram' if @combined_diagram_url %>">
+  <div class="poris-project-viewer">
+    <div id="porisViewer"></div>
+  </div>
+  <% if @combined_diagram_url %>
+    <aside class="poris-project-diagram">
+      <h3><%= l(:label_cosmosys_project_combined_diagram) %></h3>
+      <%= image_tag @combined_diagram_url, alt: l(:label_cosmosys_project_combined_diagram) %>
+    </aside>
+  <% end %>
+</div>
+
+<script type="module">
+  import { createPorisViewerPanel } from '<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>';
+  createPorisViewerPanel('<%= j @model_url %>', '#porisViewer');
+</script>

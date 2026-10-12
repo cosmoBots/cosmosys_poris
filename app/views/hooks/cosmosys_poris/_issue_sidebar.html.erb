@@ -1,0 +1,47 @@
+<% if @issue&.cosmosys_poris? && @project&.csys_project_profile == 'poris' %>
+  <% initial_model_url = project_poris_model_path(@project, format: :xml, scope: 'node', issue_id: @issue.id) %>
+  <%= stylesheet_link_tag 'poris_viewer/style.css', plugin: 'cosmosys_poris' %>
+  <div class="box poris-view-scopes">
+    <h3><%= l(:label_cosmosys_poris_view_scopes) %></h3>
+    <ul>
+      <% %w[node project node_down].each do |scope| %>
+        <li><%= link_to l("label_cosmosys_poris_scope_#{scope}"),
+                        project_poris_viewer_path(@project, scope: scope, issue_id: @issue.id),
+                        class: 'poris-scope-link',
+                        data: {
+                          scope: scope,
+                          model_url: project_poris_model_path(@project, format: :xml, scope: scope, issue_id: @issue.id)
+                        },
+                        aria: { current: ('page' if scope == 'node') } %></li>
+      <% end %>
+    </ul>
+    <div id="porisViewerSidebar" class="poris-sidebar-viewer" data-initial-model-url="<%= initial_model_url %>"></div>
+  </div>
+
+  <script type="module">
+    import { createPorisViewerPanel } from '<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>';
+
+    const viewerRoot = document.getElementById('porisViewerSidebar');
+    let viewerApp;
+
+    function loadScope(modelUrl) {
+      if (viewerApp) viewerApp.unmount();
+      viewerRoot.replaceChildren();
+      viewerApp = createPorisViewerPanel(modelUrl, viewerRoot, { compact: true });
+    }
+
+    document.querySelectorAll('.poris-scope-link').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        document.querySelectorAll('.poris-scope-link').forEach((scopeLink) => {
+          scopeLink.classList.toggle('selected', scopeLink === link);
+          if (scopeLink === link) scopeLink.setAttribute('aria-current', 'page');
+          else scopeLink.removeAttribute('aria-current');
+        });
+        loadScope(link.dataset.modelUrl);
+      });
+    });
+
+    loadScope(viewerRoot.dataset.initialModelUrl);
+  </script>
+<% end %>

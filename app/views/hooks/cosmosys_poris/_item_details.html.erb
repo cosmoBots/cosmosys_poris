@@ -1,0 +1,18 @@
+<% if issue.cosmosys_poris? %>
+  <div class="box cosmosys-poris-details">
+    <h3><%= l(:label_cosmosys_poris_metadata) %></h3>
+    <table class="attributes"><tbody>
+      <% if issue.pr_src_label.present? %><tr><th><%= l(:field_pr_src_label) %></th><td><%= issue.pr_src_label %></td></tr><% end %>
+      <% if issue.cosmosys_poris_value? %>
+        <tr><th><%= l(:field_pr_value_kind) %></th><td><%= l("label_cosmosys_poris_#{issue.pr_value_kind}") %></td></tr>
+        <% if issue.pr_value_kind == 'float' %>
+          <tr><th><%= l(:field_pr_min) %></th><td><%= issue.pr_min || '-' %></td></tr>
+          <tr><th><%= l(:field_pr_default) %></th><td><%= issue.pr_default || '-' %></td></tr>
+          <tr><th><%= l(:field_pr_max) %></th><td><%= issue.pr_max || '-' %></td></tr>
+        <% elsif issue.pr_value_kind == 'text' %>
+          <tr><th><%= l(:field_pr_default_text) %></th><td><%= issue.pr_default_text.presence || '-' %></td></tr>
+        <% end %>
+      <% end %>
+    </tbody></table>
+  </div>
+<% end %>

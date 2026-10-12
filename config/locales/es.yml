@@ -1,0 +1,23 @@
+es:
+  label_cosmosys_poris_project_profile: Modelo PORIS
+  text_cosmosys_poris_project_profile: Perfil de proyecto para sistemas, parámetros, modos, valores y comandos PORIS.
+  text_cosmosys_poris_item_profile: Elemento del modelo PORIS. La contención jerárquica es distinta de las relaciones bloqueantes entre modos y valores.
+  label_cosmosys_poris_sys: Sistema PORIS
+  label_cosmosys_poris_param: Parámetro PORIS
+  label_cosmosys_poris_mode: Modo PORIS
+  label_cosmosys_poris_value: Valor PORIS
+  label_cosmosys_poris_cmd: Comando PORIS
+  label_cosmosys_poris_metadata: Atributos PORIS
+  label_cosmosys_poris_enum: Enumerado (opción discreta)
+  label_cosmosys_poris_float: Valor flotante
+  label_cosmosys_poris_text: Valor de texto
+  label_cosmosys_poris_view_scopes: Alcance del visor PORIS
+  label_cosmosys_poris_scope_node: Nodo
+  label_cosmosys_poris_scope_project: Proyecto
+  label_cosmosys_poris_scope_node_down: Nodo y descendientes
+  field_pr_src_label: Etiqueta de origen PORIS
+  field_pr_value_kind: Tipo de valor
+  field_pr_min: Mínimo
+  field_pr_default: Predeterminado
+  field_pr_max: Máximo
+  field_pr_default_text: Texto predeterminado

@@ -1,0 +1,59 @@
+<% poris_trackers = Tracker.where(csys_item_kind: %w[poris_sys poris_param poris_mode poris_value poris_cmd]).pluck(:id).map(&:to_s) %>
+<% value_trackers = Tracker.where(csys_item_kind: 'poris_value').pluck(:id).map(&:to_s) %>
+<% selected_tracker_id = issue.tracker_id.to_s %>
+<% poris_selected = poris_trackers.include?(selected_tracker_id) %>
+<% value_selected = value_trackers.include?(selected_tracker_id) %>
+<% if poris_trackers.any? %>
+  <fieldset class="box cosmosys-poris-fields" data-poris-trackers="<%= poris_trackers.to_json %>" data-poris-value-trackers="<%= value_trackers.to_json %>" <%= 'hidden' unless poris_selected %> <%= 'disabled' unless poris_selected %>>
+    <legend><%= l(:label_cosmosys_poris_metadata) %></legend>
+    <p><%= form.text_field :pr_src_label, label: l(:field_pr_src_label) %></p>
+
+    <div data-poris-value-fields <%= 'hidden' unless value_selected %> <%= 'disabled' unless value_selected %>>
+      <p>
+        <%= form.select :pr_value_kind,
+                        options_for_select([[l(:label_cosmosys_poris_enum), 'enum'], [l(:label_cosmosys_poris_float), 'float'], [l(:label_cosmosys_poris_text), 'text']], issue.pr_value_kind.presence || 'enum'),
+                        label: l(:field_pr_value_kind) %>
+      </p>
+      <div data-poris-kind-fields="float" <%= 'hidden' unless issue.pr_value_kind == 'float' %>>
+        <div class="splitcontent">
+          <div class="splitcontentleft"><p><%= form.number_field :pr_min, step: 'any', label: l(:field_pr_min) %></p></div>
+          <div class="splitcontentright"><p><%= form.number_field :pr_default, step: 'any', label: l(:field_pr_default) %></p></div>
+        </div>
+        <p><%= form.number_field :pr_max, step: 'any', label: l(:field_pr_max) %></p>
+      </div>
+      <div data-poris-kind-fields="text" <%= 'hidden' unless issue.pr_value_kind == 'text' %>>
+        <p><%= form.text_field :pr_default_text, label: l(:field_pr_default_text) %></p>
+      </div>
+    </div>
+  </fieldset>
+  <script>
+    (function() {
+      var fieldset = document.currentScript.previousElementSibling;
+      if (!fieldset || !fieldset.matches('.cosmosys-poris-fields')) return;
+      var porisTrackerIds = JSON.parse(fieldset.dataset.porisTrackers || '[]');
+      var valueTrackerIds = JSON.parse(fieldset.dataset.porisValueTrackers || '[]');
+      var tracker = document.getElementById('issue_tracker_id');
+      var valueFields = fieldset.querySelector('[data-poris-value-fields]');
+      var kindSelect = fieldset.querySelector('[name="issue[pr_value_kind]"]');
+
+      function update() {
+        var trackerId = tracker ? tracker.value : '';
+        var isPoris = porisTrackerIds.indexOf(trackerId) !== -1;
+        var isValue = valueTrackerIds.indexOf(trackerId) !== -1;
+        fieldset.hidden = !isPoris;
+        fieldset.disabled = !isPoris;
+        valueFields.hidden = !isValue;
+        valueFields.disabled = !isValue;
+        fieldset.querySelectorAll('[data-poris-kind-fields]').forEach(function(group) {
+          var visible = isValue && group.dataset.porisKindFields === (kindSelect ? kindSelect.value : 'float');
+          group.hidden = !visible;
+          group.querySelectorAll('input,select,textarea').forEach(function(input) { input.disabled = !visible; });
+        });
+      }
+
+      if (tracker) tracker.addEventListener('change', update);
+      if (kindSelect) kindSelect.addEventListener('change', update);
+      update();
+    })();
+  </script>
+<% end %>
