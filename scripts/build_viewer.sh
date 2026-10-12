@@ -13,5 +13,9 @@ fi
 
 mkdir -p "$plugin_root/assets/javascripts/poris_viewer"
 npm --prefix "$viewer_root" run build -- --mode csys-plugin --outDir "$plugin_root/assets/javascripts/poris_viewer" --emptyOutDir
+if grep -Eq 'process\.env(\.NODE_ENV)?' "$plugin_root/assets/javascripts/poris_viewer/prod.js"; then
+  echo "The production porisViewer bundle contains an unresolved process.env reference." >&2
+  exit 1
+fi
 printf '{"repository":"https://github.com/cosmoBots/porisViewer","revision":"%s"}\n' "$viewer_revision" > "$plugin_root/assets/javascripts/poris_viewer/build-info.json"
 echo "Built porisViewer assets into cosmosys_poris/assets/javascripts/poris_viewer."
