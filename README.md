@@ -19,8 +19,7 @@ como campos personalizados.
 
 - Redmine 7.0.1.
 - cosmoSys 0.1.6 o posterior.
-- El bundle JavaScript de `porisViewer`, generado durante el empaquetado o el
-  despliegue.
+- El bundle JavaScript de `porisViewer`, incluido en este repositorio.
 
 Instala el repositorio como `plugins/cosmosys_poris`, instala las dependencias
 de Redmine y ejecuta la migración del plugin:
@@ -113,18 +112,20 @@ Graphviz, no relaciones del modelo.
 `porisViewer` es un proyecto reutilizable e independiente de este plugin. En el
 workspace de desarrollo `csys` está disponible como submódulo hermano; no se
 incluye aquí para evitar anidar un componente que otros proyectos también
-utilizan. La compilación de producción toma una revisión fijada de
-`porisViewer` y genera el bundle dentro del plugin. Para desarrollo local desde
-el workspace `csys`, compila el bundle con:
+utilizan. Este repositorio sí contiene el bundle compilado para que una
+instalación del plugin sea autónoma. Para actualizarlo desde el workspace
+`csys`, compila el bundle con:
 
 ```sh
 ./cosmosys_poris/scripts/build_viewer.sh
 ```
 
 El comando lee el código fuente desde `csys/porisViewer/` y genera los bundles
-en `cosmosys_poris/assets/javascripts/poris_viewer/`, que se ignoran en Git.
-La imagen oficial de deploy genera esos assets durante el build y fija por SHA
-tanto este plugin como `porisViewer`.
+en `cosmosys_poris/assets/javascripts/poris_viewer/`, junto con un fichero de
+procedencia que registra el SHA exacto de `porisViewer`. Los assets generados
+se versionan con el plugin y así el deploy puede fijar una única revisión
+inmutable de `cosmosys_poris` sin instalar Node ni compilar durante el build de
+Redmine.
 
 ## Licencia y contacto
 
