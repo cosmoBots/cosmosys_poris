@@ -53,9 +53,20 @@ En la ficha de cada ítem PORIS se muestran dos vistas previas Markdown: los
 fragmentos de requisitos y de validación que aporta ese elemento PORIS. Un
 sistema (`prSys`) expone los sistemas y parámetros que contiene y llega hasta
 los modos de esos parámetros; no incluye sus valores internos. La vista de un
-parámetro (`prParam`), en cambio, puede continuar hasta sus valores y rangos.
-Para modos, valores y comandos se incorpora el contexto PORIS inmediato. Las
-relaciones `blocks` acotan los destinos descritos.
+parámetro (`prParam`) se titula «Información del parámetro <nombre>» y puede
+continuar hasta sus valores y rangos. Su información es una lista plana, sin
+encabezados por modo. Sus requisitos separan disponibilidad de modos, definición
+de valores y efectos de los modos. Los valores enumerados se documentan en una
+tabla con el valor posible, su significado y su valor predeterminado; los dos
+últimos se representan con `csDatum` si aún no están definidos. Los tipos de
+`prValue` comparten las claves `default` y `meaning` para facilitar una
+conversión futura de representación. El requisito solo
+establece que el valor posible esté disponible para el parámetro. Los valores
+flotantes se describen como rangos de valores, con intervalo, unidad, resolución
+y default. Las claves `csDatum` nombran la propiedad sin repetir el tipo ya
+determinado por el nodo (`tolerance`, `constraints`, `meaning`). Para modos,
+valores y comandos se incorpora el contexto PORIS inmediato. Las relaciones
+`blocks` acotan los destinos descritos.
 
 Cada vista empieza por un listado común de candidatos `csDatum`, deduplicado
 por clave semántica, para que requisitos y validación puedan referirse al mismo
@@ -66,10 +77,11 @@ la ficha, no escriben en Redmine y todavía son experimentales.
 Los propósitos no definidos se presentan como notas informativas con su
 referencia de valor `${poris.<CSID>.purpose.value}`, no con un `TBD` literal.
 Las notas se organizan en
-capítulos Markdown sin numeración, como anticipo de futuros `csInfo`. En la
-vista de un `prSys` aparecen en una lista plana bajo «Información del sistema
-<nombre>»; las referencias a parámetros y modos incluyen el sistema contenedor
-para desambiguarlas. La vista de requisitos de un `prSys` incluye una
+capítulos Markdown sin numeración, como anticipo de futuros `csInfo`. En las
+vistas de `prSys` y `prParam` aparecen en una lista plana bajo «Información del
+sistema <nombre>» o «Información del parámetro <nombre>»; las referencias a
+parámetros y modos incluyen el contenedor para desambiguarlas. La vista de
+requisitos de un `prSys` incluye una
 descripción general y capítulos «Parámetros» y «Modos de funcionamiento». Los
 requisitos son atómicos: para cada parámetro solo se requieren los modos
 enlazados desde los modos del sistema; cada modo consumido se declara
