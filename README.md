@@ -93,6 +93,15 @@ proyectos correspondientes. El botón de `csDatum` sí abre un preflight y crea
 solo las definiciones que faltan. El destino se elige entre proyectos del mismo
 árbol que tengan habilitado `csDatum` y donde el usuario pueda añadir ítems.
 Los valores existentes se conservan y los nuevos empiezan como `TBD`.
+La validación agrupa sus pasos en casos de prueba por alcance PORIS; cada caso
+usa referencias `csDatum` TBD para `tpPreconditions` y `tpPostconditions`, y
+cada paso muestra por separado título, estímulos y resultado esperado, con la
+estructura de `tpStep` de `cosmosys_val`. Los rangos flotantes generan pasos
+individuales para el valor predeterminado, ambos límites, puntos interiores
+(`mínimo + tolerancia`, `máximo - tolerancia`) y exteriores (`mínimo -
+tolerancia`, `máximo + tolerancia`). Todavía no se generan recorridos completos
+para posicionar todos los modos ni comprobaciones negativas de modos
+incompatibles; quedan para una iteración posterior.
 Las plantillas Markdown están en los ficheros de locale inglés y español y se
 resuelven con el idioma configurado en el proyecto, no con el idioma de
 interfaz del usuario. Admiten interpolaciones nombradas de I18n para los

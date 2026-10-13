@@ -70,7 +70,7 @@ module CosmosysPoris
     def renumber(content, kind)
       prefix = kind == 'requirements' ? 'R' : 'V'
       counter = (@counters ||= Hash.new(0))
-      content.gsub(/^(#+\s+)#{prefix}-\d{4}$/) do
+      content.gsub(/^(#+\s+)#{prefix}-\d{4}(?=\s|$)/) do
         heading_prefix = Regexp.last_match(1)
         counter[prefix] += 1
         "#{heading_prefix}#{format('%s-%04d', prefix, counter[prefix])}"

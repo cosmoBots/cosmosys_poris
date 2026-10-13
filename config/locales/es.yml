@@ -57,6 +57,10 @@ es:
         parameter_purpose: Propósito del parámetro
         purpose_of: Propósito del %{noun} %{name}
         range_default: Valor predeterminado del rango de valores
+        test_case_preconditions: Precondiciones del caso de prueba
+        test_case_postconditions: Postcondiciones del caso de prueba
+        test_case_preconditions_of: Precondiciones del caso de prueba para %{noun} %{name}
+        test_case_postconditions_of: Postcondiciones del caso de prueba para %{noun} %{name}
         range_maximum: Límite superior del rango de valores
         range_meaning: Significado del rango de valores
         range_minimum: Límite inferior del rango de valores
@@ -158,26 +162,66 @@ es:
       topic:
         parameter_required_modes: Modos necesarios del parámetro %{parameter}
       validation:
-        active_float_range: 'Seleccionar el modo que habilita %{value} en %{parameter}. Dejar el valor sin definir y comprobar que toma el valor predeterminado (%{value_default}). Probar después %{minimum} - %{tolerance} y %{maximum} + %{tolerance} como entradas fuera de rango: ambas deben rechazarse y restaurar el valor predeterminado. Probar %{minimum} + %{tolerance} y %{maximum} - %{tolerance} como entradas dentro del rango, respetando la resolución %{resolution}; la aceptación exacta de los límites %{minimum} y %{maximum} depende de la inclusividad %{inclusivity}.'
-        command_accepted: 'Comprobar que el %{noun} %{container} acepta el comando %{command}.'
-        command_effect: 'Invocar el comando %{command} de %{container} y comprobar el efecto definido en %{effect}.'
-        container_mode_selects_child_mode: 'Activar el modo %{mode} y comprobar que el %{noun} %{child} queda en el modo %{child_mode}.'
-        container_offers_child: 'Comprobar que %{container} ofrece el %{child_noun} %{child}.'
-        container_offers_mode: 'Comprobar que el %{noun} %{container} ofrece el modo %{mode}.'
-        enum_default: 'Seleccionar el valor posible **%{name}** y comprobar el valor predeterminado definido en %{value_default}.'
-        float_range_boundaries: 'Para el rango de valores **%{value}** [%{range}] en %{unit}, probar el valor predeterminado %{value_default}; los extremos exactos %{minimum} y %{maximum}; puntos interiores %{minimum} + %{tolerance} y %{maximum} - %{tolerance}; y puntos exteriores %{minimum} - %{tolerance} y %{maximum} + %{tolerance}. Los extremos se aceptan o rechazan según la inclusividad %{inclusivity}; los puntos interiores deben aceptarse y los exteriores rechazarse. Elegir puntos representables según la resolución %{resolution} y registrar las comparaciones usando la tolerancia %{tolerance}.'
-        mode_enables_parameter: 'Seleccionar %{mode} y comprobar que el parámetro %{parameter} está disponible.'
-        mode_enables_value: 'Seleccionar %{mode} y comprobar que %{value} es una alternativa disponible para %{parameter}.'
-        model_command_accepted: 'Comprobar que el comando %{command} está disponible para su invocación.'
-        model_command_effect: 'Invocar el comando %{command} y comprobar el efecto definido en %{effect}.'
-        model_declares_value: 'Comprobar que el valor %{value} está presente en el modelo PORIS.'
-        numbered: "### %{id}\n\n%{text}"
-        parameter_modes_and_values: 'Comprobar que el parámetro %{parameter} ofrece %{modes} y los valores habilitados para cada modo.'
-        parameter_offers_mode: 'Comprobar que el parámetro %{parameter} ofrece el modo %{mode}.'
-        system_mode_selects_parameter_mode: 'Seleccionar el modo %{mode} en %{system} y comprobar que el parámetro %{parameter} queda en el modo %{parameter_mode}.'
-        system_offers_parameter: 'Comprobar que %{system} ofrece el parámetro %{parameter}.'
-        text_constraints: 'Probar el valor textual predeterminado y los casos límite definidos en %{constraints}.'
-        value_admitted_by_modes: 'Activar uno de los modos %{modes} y comprobar que %{value} se ofrece para %{parameter}.'
+        none: ninguno
+        test_case_title: 'Verificar %{noun} %{name}'
+        test_case: "#### Caso de prueba: %{title}\n\n- Precondiciones: %{preconditions}\n- Postcondiciones: %{postconditions}\n\n%{steps}"
+        numbered: "##### %{id}\n\n**%{title}**\n\nEstímulos: %{stimuli}\n\nResultado esperado: %{expected}"
+        step:
+          active_float_default_expected: 'El campo de %{value} muestra su valor predeterminado, %{value_default}.'
+          active_float_default_stimuli: 'Con el campo de %{parameter} sin valor asignado, seleccionar el modo que habilita %{value} (%{mode_context}).'
+          active_float_default_title: 'Activar %{value} para %{parameter}.'
+          command_accepted_expected: 'El %{noun} %{container} presenta el comando %{command} como acción disponible.'
+          command_accepted_title: 'Comprobar que %{container} ofrece el comando %{command}.'
+          command_effect_expected: 'La acción resultante corresponde a %{effect}.'
+          command_effect_title: 'Comprobar el efecto del comando %{command}.'
+          container_mode_selects_child_mode_expected: 'El %{noun} %{child} queda en el modo %{child_mode}.'
+          container_mode_selects_child_mode_title: 'Comprobar el modo hijo seleccionado por %{mode}.'
+          container_offers_child_expected: 'El usuario puede acceder a %{child_noun} %{child} en %{container}.'
+          container_offers_child_title: 'Comprobar que %{container} ofrece %{child_noun} %{child}.'
+          container_offers_mode_expected: 'El usuario puede seleccionar el modo %{mode} en el %{noun} %{container}.'
+          container_offers_mode_title: 'Comprobar que %{container} ofrece el modo %{mode}.'
+          enum_default_expected: 'El valor activo es %{name}, conforme al valor predeterminado %{value_default}.'
+          enum_default_stimuli: 'Dejar el valor sin definir mientras %{name} está activo.'
+          enum_default_title: 'Comprobar el valor predeterminado de %{name}.'
+          float_default_expected: 'El campo muestra el valor predeterminado %{value_default}.'
+          float_default_stimuli: 'Con %{value} activo para %{parameter}, vaciar su campo de valor.'
+          float_default_title: 'Comprobar el valor predeterminado de %{value}.'
+          float_exact_bound_expected: 'El valor se acepta si el límite correspondiente es inclusivo y se rechaza si es exclusivo, según %{inclusivity}.'
+          float_exterior_expected: 'La entrada se rechaza por quedar fuera de %{range} y el campo recupera el valor predeterminado %{value_default}; interpretar el límite según resolución %{resolution} e inclusividad %{inclusivity}.'
+          float_exterior_title: 'Comprobar el rechazo de %{point} para %{value}.'
+          float_interior_expected: 'La entrada se acepta por quedar dentro de %{range}; el valor representado respeta la resolución %{resolution}.'
+          float_interior_title: 'Comprobar la aceptación de %{point} para %{value}.'
+          float_maximum_boundary_title: 'Comprobar el límite superior %{bound} de %{value}.'
+          float_minimum_boundary_title: 'Comprobar el límite inferior %{bound} de %{value}.'
+          float_set_exact_bound: 'Establecer el valor %{value} de %{parameter} exactamente en %{bound} %{unit}.'
+          float_set_point: 'Establecer el valor %{value} de %{parameter} en %{point} %{unit}.'
+          mode_enables_parameter_expected: 'El parámetro %{parameter} está disponible mientras el modo %{mode} está activo.'
+          mode_enables_parameter_title: 'Comprobar que el modo %{mode} habilita el parámetro %{parameter}.'
+          mode_enables_value_expected: 'El valor %{value} se ofrece para el parámetro %{parameter}.'
+          mode_enables_value_title: 'Comprobar que el modo %{mode} habilita %{value} para %{parameter}.'
+          model_command_accepted_expected: 'El comando %{command} está disponible para su invocación.'
+          model_command_accepted_title: 'Comprobar que el comando %{command} está disponible.'
+          model_command_effect_title: 'Comprobar el efecto del comando %{command}.'
+          model_declares_value_expected: 'El valor %{value} está presente en el modelo PORIS.'
+          model_declares_value_title: 'Comprobar que el modelo PORIS declara %{value}.'
+          parameter_modes_and_values_expected: 'El parámetro %{parameter} ofrece %{modes} y los valores habilitados para cada modo.'
+          parameter_modes_and_values_title: 'Comprobar los modos y valores ofrecidos por el parámetro %{parameter}.'
+          parameter_offers_mode_expected: 'El sistema permite al usuario establecer el parámetro %{parameter} en modo %{mode}.'
+          parameter_offers_mode_title: 'Comprobar que el parámetro %{parameter} ofrece el modo %{mode}.'
+          select_mode: 'Seleccionar el modo %{mode}.'
+          select_mode_in_system: 'Seleccionar el modo %{mode} en el sistema %{system}.'
+          select_one_mode: 'Seleccionar uno de los modos que habilitan el valor: %{modes}.'
+          system_mode_selects_parameter_mode_expected: 'El parámetro %{parameter} queda en el modo %{parameter_mode}.'
+          system_mode_selects_parameter_mode_title: 'Comprobar el modo del parámetro seleccionado por %{mode} en %{system}.'
+          system_offers_parameter_expected: 'El usuario puede acceder al parámetro %{parameter} en %{system}.'
+          system_offers_parameter_title: 'Comprobar que %{system} ofrece el parámetro %{parameter}.'
+          text_constraints_expected: 'El valor cumple las restricciones de texto definidas en %{constraints}.'
+          text_constraints_stimuli: 'Introducir el valor textual predeterminado y los casos frontera de %{name}.'
+          text_constraints_title: 'Comprobar las restricciones de texto de %{name}.'
+          value_admitted_by_modes_expected: 'El valor %{value} está disponible para el parámetro %{parameter}.'
+          value_admitted_by_modes_title: 'Comprobar que %{value} está admitido para %{parameter}.'
+          invoke_command: 'Invocar el comando %{command} de %{container}.'
+          invoke_model_command: 'Invocar el comando %{command}.'
     datums:
       title: Generar csDatum compartidos
       target_project: Proyecto de destino
