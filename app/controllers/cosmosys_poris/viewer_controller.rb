@@ -67,8 +67,9 @@ module CosmosysPoris
       operations = if params[:root].present?
                      runtime.operations_from_snapshot(viewer_snapshot(params[:root]), previous_state: previous_state)
                    else
-                     explicit_operations
+                     []
                    end
+      operations.concat(explicit_operations) if params[:operations].present?
       result = runtime.apply(operations)
       save_runtime_session_state(result.fetch('state'))
       response.headers['Cache-Control'] = 'no-store'
@@ -130,7 +131,7 @@ module CosmosysPoris
 
     def explicit_operations
       Array(params.require(:operations)).map do |operation|
-        operation.permit(:type, :node_id, :mode_id, :value_id, :data).to_h
+        operation.permit(:type, :node_id, :mode_id, :value_id, :command_id, :data).to_h
       end
     end
 

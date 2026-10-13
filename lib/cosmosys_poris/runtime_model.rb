@@ -15,6 +15,7 @@ module CosmosysPoris
       @children = @items.values.group_by(&:parent_issue_id)
       @modes = @items.values.select { |item| item.cosmosys_item_kind_key == 'poris_mode' }.index_by(&:id)
       @values = @items.values.select { |item| item.cosmosys_item_kind_key == 'poris_value' }.index_by(&:id)
+      @commands = @items.values.select { |item| item.cosmosys_item_kind_key == 'poris_cmd' }.index_by(&:id)
       @relations = OptionRelations.grouped_by_mode(@modes.keys)
       @roots = ordered(@items.values.select { |item| !@items.key?(item.parent_issue_id) })
       @state = {}
@@ -27,7 +28,8 @@ module CosmosysPoris
     end
 
     # Apply a list of explicit operations in order. Each operation is
-    # {type: "set_mode"|"set_value", node_id:, mode_id/value_id:, data:}.
+    # {type: "set_mode"|"set_value"|"invoke_command", node_id:,
+    # mode_id/value_id/command_id:, data:}.
     def apply(operations)
       results = Array(operations).map do |operation|
         result = apply_operation(operation)
@@ -114,9 +116,31 @@ module CosmosysPoris
         set_mode(node, op['mode_id'], allow_implicit_unknown: op['internal'] == true)
       when 'set_value'
         set_value(node, op['value_id'], op['data'])
+      when 'invoke_command'
+        invoke_command(node, op['command_id'])
       else
         rejected(op, 'Unsupported PORIS operation')
       end
+    end
+
+    # A PORIS command is an event, not configuration state. The model can
+    # validate and record its invocation, but a hardware-specific action must
+    # be supplied by an execution adapter in a deployment that has one.
+    def invoke_command(node, requested_id)
+      command = @commands[requested_id.to_i] if requested_id.to_s.match?(/\A\d+\z/)
+      unless command && command.parent_issue_id == node.id
+        return rejected_for(node, 'invoke_command', requested_id, 'Command is not defined by this PORIS container')
+      end
+
+      {
+        'accepted' => true,
+        'invoked' => true,
+        'type' => 'invoke_command',
+        'node_id' => node.id,
+        'command_id' => command.id,
+        'command_name' => command.subject,
+        'result' => 'invocation recorded'
+      }
     end
 
     def set_mode(node, requested_id, allow_implicit_unknown: false)
@@ -305,6 +329,11 @@ module CosmosysPoris
         else
           "#{target}.setValue(#{name.inspect})"
         end
+      elsif op['type'] == 'invoke_command'
+        command = @commands[op['command_id'].to_i] if op['command_id'].to_s.match?(/\A\d+\z/)
+        return "#{target}.<invalid command>()" unless command && command.parent_issue_id == node.id
+
+        "#{target}.#{command.subject}()"
       else
         'object.<unsupported operation>'
       end

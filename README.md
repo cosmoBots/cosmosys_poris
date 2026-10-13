@@ -57,7 +57,12 @@ La primera visualización con porisViewer ya está disponible en el menú PORIS 
 en `/projects/:identifier/poris`. Consume un XML generado desde el modelo de
 Redmine. En el alcance de proyecto, `Commit` envía la configuración actual al
 runtime Ruby PORIS, y muestra tanto el estado efectivo de cada sistema y
-parámetro como las llamadas `setMode`/`setValue` realizadas. Cada sesión tiene
+parámetro como las llamadas `setMode`/`setValue` realizadas. Los botones de
+`prCmd` envían en esa misma secuencia el estado actual y una operación
+`invoke_command`; la llamada se valida contra el comando hijo del contenedor,
+se registra como una invocación de una sola vez y no se guarda ni se reproduce
+al restaurar la sesión. No ejecuta todavía una acción física: esa conducta no
+está definida en el modelo. Cada sesión tiene
 su propia configuración: se conserva en el estado de sesión de Rails, no en la
 base de datos del proyecto ni en un objeto global compartido. En cada petición
 se reconstruye el runtime desde el modelo PORIS y se reproducen las operaciones

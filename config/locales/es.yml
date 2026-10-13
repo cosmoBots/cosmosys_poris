@@ -21,7 +21,7 @@ es:
   label_cosmosys_poris_scope_node_down: Nodo y descendientes
   label_cosmosys_poris_project_preview: Vistas previas de requisitos y validación del proyecto
   label_cosmosys_poris_runtime_state: Estado del runtime PORIS (esta sesión)
-  label_cosmosys_poris_runtime_operations: Operaciones enviadas en este commit
+  label_cosmosys_poris_runtime_operations: Operaciones enviadas al runtime PORIS
   text_cosmosys_poris_runtime_empty: Todavía no se ha hecho ningún commit PORIS en esta sesión.
   text_cosmosys_poris_runtime_mode: '%{name} está en el modo %{mode}.'
   text_cosmosys_poris_runtime_value: '%{name} tiene el valor %{value} (%{data}).'
