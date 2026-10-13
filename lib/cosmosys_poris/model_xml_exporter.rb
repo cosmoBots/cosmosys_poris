@@ -71,7 +71,12 @@ module CosmosysPoris
         selected[item.id] = item
         queue.concat(Array(by_parent[item.id]))
       end
-      selected.values
+      selected_items = selected.values
+      if @scope == 'node' && anchor.cosmosys_item_kind_key == 'poris_sys'
+        selected_items.reject { |item| item.cosmosys_item_kind_key == 'poris_value' }
+      else
+        selected_items
+      end
     end
 
     def scope_anchor

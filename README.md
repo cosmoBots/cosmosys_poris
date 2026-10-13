@@ -67,6 +67,11 @@ y default. Las claves `csDatum` nombran la propiedad sin repetir el tipo ya
 determinado por el nodo (`tolerance`, `constraints`, `meaning`). Para modos,
 valores y comandos se incorpora el contexto PORIS inmediato. Las relaciones
 `blocks` acotan los destinos descritos.
+En la ficha, los paneles se ordenan como combinado, dependencias y jerárquico;
+las vistas previas de requisitos y validación aparecen después de esos
+diagramas. En alcance `node`, el formulario de un `prSys` omite los `prValue`
+internos de sus parámetros para mantener el mismo límite de interfaz que el
+preview de requisitos; `project` y `node_down` conservan el modelo completo.
 
 Cada vista empieza por un listado común de candidatos `csDatum`, deduplicado
 por clave semántica, para que requisitos y validación puedan referirse al mismo
