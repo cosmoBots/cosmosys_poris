@@ -18,6 +18,28 @@
   </div>
   <% if @combined_diagram_url %>
     <aside class="poris-project-diagram">
+      <% if @runtime_commit_url %>
+        <section class="poris-runtime-state" id="porisRuntimeState"
+               data-mode-template="<%= l(:text_cosmosys_poris_runtime_mode, name: '%{name}', mode: '%{mode}') %>"
+               data-value-template="<%= l(:text_cosmosys_poris_runtime_value, name: '%{name}', value: '%{value}', data: '%{data}') %>"
+               data-value-without-data-template="<%= l(:text_cosmosys_poris_runtime_value_without_data, name: '%{name}', value: '%{value}') %>"
+               data-rejected-label="<%= l(:text_cosmosys_poris_runtime_operation_rejected) %>">
+        <h3><%= l(:label_cosmosys_poris_runtime_state) %></h3>
+        <ul class="poris-runtime-nodes" id="porisRuntimeNodes">
+          <% Array(@runtime_state).each do |row| %>
+            <li><%= l(:text_cosmosys_poris_runtime_mode, name: row['name'], mode: row['mode_name']) %></li>
+            <% if row['value_name'] %>
+              <li><%= row['data'].nil? ? l(:text_cosmosys_poris_runtime_value_without_data, name: row['name'], value: row['value_name']) : l(:text_cosmosys_poris_runtime_value, name: row['name'], value: row['value_name'], data: row['data']) %></li>
+            <% end %>
+          <% end %>
+        </ul>
+        <% if Array(@runtime_state).empty? %>
+          <p id="porisRuntimeEmpty"><%= l(:text_cosmosys_poris_runtime_empty) %></p>
+        <% end %>
+        <h4><%= l(:label_cosmosys_poris_runtime_operations) %></h4>
+        <ol class="poris-runtime-operations" id="porisRuntimeOperations"></ol>
+        </section>
+      <% end %>
       <h3><%= l(:label_cosmosys_project_combined_diagram) %></h3>
       <%= image_tag @combined_diagram_url, alt: l(:label_cosmosys_project_combined_diagram) %>
     </aside>
@@ -61,5 +83,37 @@
 
 <script type="module">
   import { createPorisViewerPanel } from '<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>';
-  createPorisViewerPanel('<%= j @model_url %>', '#porisViewer');
+  const initialState = <%= raw json_escape(Array(@runtime_state).to_json) %>;
+  const runtimePanel = document.getElementById('porisRuntimeState');
+  const interpolate = (template, values) => template.replace(/%\{(\w+)\}/g, (_, key) => String(values[key] ?? ''));
+  const renderRuntimeResult = (result) => {
+    const nodes = document.getElementById('porisRuntimeNodes');
+    const operations = document.getElementById('porisRuntimeOperations');
+    if (!nodes || !operations) return;
+    nodes.replaceChildren();
+    operations.replaceChildren();
+    document.getElementById('porisRuntimeEmpty')?.remove();
+    (result.state || []).forEach((row) => {
+      const modeLine = document.createElement('li');
+      modeLine.textContent = interpolate(runtimePanel.dataset.modeTemplate, { name: row.name, mode: row.mode_name });
+      nodes.appendChild(modeLine);
+      if (row.value_name) {
+        const valueLine = document.createElement('li');
+        const template = row.data == null ? runtimePanel.dataset.valueWithoutDataTemplate : runtimePanel.dataset.valueTemplate;
+        valueLine.textContent = interpolate(template, { name: row.name, value: row.value_name, data: row.data });
+        nodes.appendChild(valueLine);
+      }
+    });
+    (result.operations || []).forEach((operation) => {
+      const line = document.createElement('li');
+      line.textContent = operation.accepted ? operation.call : `${operation.call} — ${runtimePanel.dataset.rejectedLabel}: ${operation.reason}`;
+      operations.appendChild(line);
+    });
+  };
+  createPorisViewerPanel('<%= j @model_url %>', '#porisViewer', {
+    commitUrl: '<%= j(@runtime_commit_url.to_s) %>',
+    csrfToken: document.querySelector('meta[name="csrf-token"]')?.content || '',
+    initialState,
+    onCommit: renderRuntimeResult
+  });
 </script>

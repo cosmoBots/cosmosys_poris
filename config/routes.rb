@@ -4,6 +4,9 @@ get 'projects/:project_id/poris',
 get 'projects/:project_id/poris/model',
     to: 'cosmosys_poris/viewer#model',
     as: 'project_poris_model'
+post 'projects/:project_id/poris/commit',
+     to: 'cosmosys_poris/viewer#commit',
+     as: 'commit_project_poris_state'
 get 'projects/:project_id/poris/datums',
     to: 'cosmosys_poris/viewer#datum_preflight',
     as: 'project_poris_datum_preflight'

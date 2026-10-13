@@ -20,6 +20,13 @@ en:
   label_cosmosys_poris_scope_project: Project
   label_cosmosys_poris_scope_node_down: Node & descendants
   label_cosmosys_poris_project_preview: Generated requirements and validation previews
+  label_cosmosys_poris_runtime_state: PORIS runtime state (this session)
+  label_cosmosys_poris_runtime_operations: Operations sent by this commit
+  text_cosmosys_poris_runtime_empty: No PORIS commit has been made in this session.
+  text_cosmosys_poris_runtime_mode: '%{name} is in mode %{mode}.'
+  text_cosmosys_poris_runtime_value: '%{name} has value %{value} (%{data}).'
+  text_cosmosys_poris_runtime_value_without_data: '%{name} has value %{value}.'
+  text_cosmosys_poris_runtime_operation_rejected: Rejected
   label_cosmosys_poris_generate_requirements: Generate/sync requirements project
   label_cosmosys_poris_generate_validation: Generate/sync validation plan
   label_cosmosys_poris_generate_datums: Generate shared csDatum

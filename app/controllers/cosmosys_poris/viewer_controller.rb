@@ -8,6 +8,12 @@ module CosmosysPoris
       @model_url = project_poris_model_path(@project, format: :xml, scope: @scope, issue_id: @issue&.id)
       return unless @scope == 'project'
 
+      unless @issue
+        @runtime_state = hydrated_runtime_state
+        @runtime_commit_url = commit_project_poris_state_path(@project)
+        response.headers['Cache-Control'] = 'private, no-store'
+      end
+
       @combined_diagram_url = cosmosys_diagram_export_path(
         project_id: @project.identifier,
         kind: 'combined',
@@ -51,6 +57,26 @@ module CosmosysPoris
              content_type: 'application/xml'
     end
 
+    def commit
+      raise ActiveRecord::RecordNotFound unless @scope == 'project' && @issue.nil?
+
+      runtime = RuntimeModel.new(@project, user: User.current)
+      saved_state = runtime_session_state
+      runtime.restore(saved_state) if saved_state.any?
+      previous_state = runtime.state
+      operations = if params[:root].present?
+                     runtime.operations_from_snapshot(viewer_snapshot(params[:root]), previous_state: previous_state)
+                   else
+                     explicit_operations
+                   end
+      result = runtime.apply(operations)
+      save_runtime_session_state(result.fetch('state'))
+      response.headers['Cache-Control'] = 'no-store'
+      render json: result
+    rescue ActionController::ParameterMissing, ArgumentError, TypeError => error
+      render json: { error: error.message }, status: :unprocessable_entity
+    end
+
     private
 
     def load_poris_view_context
@@ -78,6 +104,45 @@ module CosmosysPoris
       default_target = @datum_target_projects.find { |project| project.id == @project.id } || @datum_target_projects.first
       target_id = params[:target_project_id].presence || default_target&.id
       @datum_target_projects.find { |project| project.id == target_id.to_i } || raise(ActiveRecord::RecordNotFound)
+    end
+
+    def runtime_session_state
+      states = session[:cosmosys_poris_runtime_state]
+      states.is_a?(Hash) ? states[@project.id.to_s] || [] : []
+    end
+
+    def hydrated_runtime_state
+      saved_state = runtime_session_state
+      return [] if saved_state.empty?
+
+      runtime = RuntimeModel.new(@project, user: User.current)
+      runtime.restore(saved_state)
+      runtime.state
+    end
+
+    def save_runtime_session_state(state)
+      all_states = session[:cosmosys_poris_runtime_state] || {}
+      all_states[@project.id.to_s] = Array(state).map do |row|
+        row.slice('node_id', 'mode_id', 'value_id', 'data').compact
+      end
+      session[:cosmosys_poris_runtime_state] = all_states
+    end
+
+    def explicit_operations
+      Array(params.require(:operations)).map do |operation|
+        operation.permit(:type, :node_id, :mode_id, :value_id, :data).to_h
+      end
+    end
+
+    def viewer_snapshot(parameter)
+      raw_input = parameter.respond_to?(:to_unsafe_h) ? parameter.to_unsafe_h : parameter
+      input = raw_input.to_h.stringify_keys
+      {
+        'id' => input['id'],
+        'mode' => input['mode'].is_a?(Hash) ? input['mode'].slice('id', 'name') : nil,
+        'value' => input['value'].is_a?(Hash) ? input['value'].slice('id', 'name', 'type', 'number', 'data') : nil,
+        'subsystems' => Array(input['subsystems']).map { |child| viewer_snapshot(child) }
+      }
     end
   end
 end

@@ -55,9 +55,16 @@ y perfiles durante la carga del plugin.
 
 La primera visualización con porisViewer ya está disponible en el menú PORIS y
 en `/projects/:identifier/poris`. Consume un XML generado desde el modelo de
-Redmine; por ahora permite inspeccionar y ejercitar el modelo, pero no persiste
-selecciones como una instancia PORIS. El editor asistido de subárboles y la
-persistencia de instancias quedan para fases futuras.
+Redmine. En el alcance de proyecto, `Commit` envía la configuración actual al
+runtime Ruby PORIS, y muestra tanto el estado efectivo de cada sistema y
+parámetro como las llamadas `setMode`/`setValue` realizadas. Cada sesión tiene
+su propia configuración: se conserva en el estado de sesión de Rails, no en la
+base de datos del proyecto ni en un objeto global compartido. En cada petición
+se reconstruye el runtime desde el modelo PORIS y se reproducen las operaciones
+anteriores antes de aplicar las nuevas. El endpoint también admite operaciones
+individuales, por lo que no depende de que el cliente sea porisViewer. El
+editor asistido de subárboles y las configuraciones compartidas persistentes
+quedan para fases futuras.
 
 Un modo puede activar varios `prValue` de cualquier tipo. Si hay más de un
 candidato, porisViewer muestra un selector del valor activo; el tipo de ese
@@ -163,43 +170,43 @@ obligación por parámetro indicando el modo seleccionado, sin expandir los
 valores numéricos descendientes. El propósito que falte se presenta como nota
 informativa ligada a un candidato `csDatum`, no como requisito.
 
-### Evolución prevista: configuración PORIS y realce del diagrama
+### Runtime por sesión y realce del diagrama
 
 El viewer ya mantiene en memoria el grafo PORIS parseado y el estado reactivo
 de cada parámetro: modo actual, `prValue` activo y dato editable. Ese estado
-permite ejercitar el modelo, pero todavía está distribuido entre los nodos
-`PorisNode` y el store; no es una instancia PORIS canónica ni se persiste.
+se traduce a operaciones ordenadas desde la raíz hacia las hojas. El servidor
+reconstruye un runtime Ruby PORIS de vida corta a partir del modelo vigente,
+restaura el estado de la sesión y aplica cada `setMode`/`setValue`; los modos
+inválidos se rechazan, y los cambios de supramodo reconcilian los descendientes
+con las alternativas elegibles. La configuración resultante se conserva por
+sesión mediante el `CookieStore` de Rails (sólo IDs y datos seleccionados), no
+como instancia Ruby que permanezca viva entre peticiones ni como estado
+compartido del proyecto. El runtime es una implementación acotada
+del contrato PORIS; la integración de las clases `rbPORIS` originales se deja
+para una fase posterior.
 
 La evolución propuesta es:
 
-1. Definir una representación serializable de configuración PORIS desde la
-   raíz hasta las hojas. Debe identificar contenedores, modos elegidos,
-   `prValue` activo y dato tipado, usando identidad PORIS estable y sin depender
-   de etiquetas o del layout del diagrama.
-2. Hacer que el formulario derive esa representación a partir del estado
-   existente y comprobar los casos de cambio de modo, valores mixtos y rangos.
-   En esta fase puede permanecer enteramente en el cliente.
-3. Añadir al SVG del diagrama combinado identificadores estables que permitan
+1. Añadir al SVG del diagrama combinado identificadores estables que permitan
    asociar cada nodo gráfico con su elemento PORIS. El estado activo podría
    realzarse en el cliente sin regenerar Graphviz si el SVG se carga como DOM
    accesible (no como `<img>`); actualmente se muestra como imagen y no se puede
    modificar su DOM desde la página.
-4. Si la manipulación local del SVG resulta frágil o insuficiente, pedir al
+2. Si la manipulación local del SVG resulta frágil o insuficiente, pedir al
    servidor un SVG actualizado con la selección activa y volver a dibujarlo.
-   El POST de la configuración completa se reserva para cuando haya un
-   consumidor servidor o persistencia que lo justifique; el realce visual por
-   sí solo no requiere enviarlo.
+   El POST de selección ya existe para ejecutar el runtime de sesión; el realce
+   visual por sí solo no necesita modificar ese contrato.
 
-5. Como mejora futura del plan de validación, al seleccionar un paso de prueba
+3. Como mejora futura del plan de validación, al seleccionar un paso de prueba
    realzar en el diagrama los nodos PORIS que intervienen en ese paso. Para ello
    cada paso necesitará conservar los CSID involucrados y el SVG deberá exponer
    una identidad estable asociada a cada nodo. Esto es independiente del
    recorrido DFS ya generado y todavía no está implementado.
 
-Antes de implementar la API se decidirá el identificador estable compartido
-entre XML del modelo, configuración serializada y SVG, así como el momento de
-envío y el tratamiento de configuraciones parciales. Esto no forma parte de la
-integración actual ni del despliegue inmediato de PORIS.
+La configuración de sesión utiliza IDs de los items y modos del modelo vigente;
+si la estructura cambia entre peticiones, el runtime vuelve a validar y
+reconciliar el estado guardado. El siguiente identificador estable que debe
+definirse es el compartido entre XML del modelo y SVG para realce interactivo.
 
 Desde la ficha de un ítem PORIS se puede abrir el visor en tres alcances: el
 nodo contenedor más cercano dentro del proyecto actual, el proyecto y sus

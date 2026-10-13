@@ -14,6 +14,31 @@
   overflow: auto;
 }
 
+.poris-runtime-state {
+  margin-bottom: 1.5em;
+  padding: 0.8em 1em;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.poris-runtime-state h3,
+.poris-runtime-state h4 {
+  margin-top: 0.2em;
+}
+
+.poris-runtime-nodes,
+.poris-runtime-operations {
+  margin: 0.5em 0 1em;
+  padding-left: 1.5em;
+}
+
+.poris-runtime-operations li {
+  margin: 0.25em 0;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+}
+
 .poris-project-layout-with-diagram .poris-project-diagram img {
   display: block;
   width: 100%;
