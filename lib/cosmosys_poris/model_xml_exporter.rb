@@ -45,7 +45,7 @@ module CosmosysPoris
     def scoped_project_ids
       case @scope
       when 'node'
-        [@project.id]
+        ([@project.id] + focused_ancestor_project_ids).uniq
       when 'node_down'
         anchor_project = scope_anchor&.project
         projects = (anchor_project || @project).self_and_descendants
@@ -57,6 +57,8 @@ module CosmosysPoris
 
     def select_scoped_items(candidates)
       return candidates if @scope == 'project' || @issue.nil?
+
+      return select_focused_items(candidates) if focused_non_container_issue?
 
       anchor = scope_anchor
       return [] unless anchor
@@ -76,6 +78,108 @@ module CosmosysPoris
         selected_items.reject { |item| item.cosmosys_item_kind_key == 'poris_value' }
       else
         selected_items
+      end
+    end
+
+    def focused_non_container_issue?
+      @issue&.cosmosys_poris? && %w[poris_mode poris_value].include?(@issue.cosmosys_item_kind_key)
+    end
+
+    def focused_ancestor_project_ids
+      return [] unless focused_non_container_issue?
+
+      parent = @issue.parent
+      ids = []
+      while parent
+        ids << parent.project_id
+        break if %w[poris_sys poris_param].include?(parent.cosmosys_item_kind_key)
+
+        parent = parent.parent
+      end
+      ids
+    end
+
+    # A focused mode/value is rendered from its containing parameter/system,
+    # with only the PORIS branch that can keep the selected item available.
+    def select_focused_items(candidates)
+      @candidate_items_by_id = candidates.index_by(&:id)
+      @candidate_children = candidates.group_by(&:parent_issue_id)
+      mode_ids = candidates.select { |item| item.cosmosys_item_kind_key == 'poris_mode' }.map(&:id)
+      @block_targets = IssueRelation.where(issue_from_id: mode_ids, relation_type: 'blocks')
+                                    .order(:id)
+                                    .pluck(:issue_from_id, :issue_to_id)
+                                    .group_by(&:first)
+                                    .transform_values { |relations| relations.map(&:last) }
+      @focused_items = {}
+      @focused_container_destinations = {}
+      @focused_container_modes = {}
+      @focused_mode_destinations = {}
+
+      container = @candidate_items_by_id[@issue.parent_issue_id]
+      return [] unless container&.cosmosys_poris? && %w[poris_sys poris_param].include?(container.cosmosys_item_kind_key)
+
+      if @issue.cosmosys_item_kind_key == 'poris_mode'
+        include_focused_mode(container, @issue, {})
+      else
+        include_focused_value(container, @issue)
+      end
+
+      @focused_items.values
+    end
+
+    def include_focused_mode(container, mode, visiting)
+      return if visiting[mode.id]
+
+      visiting[mode.id] = true
+      @focused_items[container.id] = container
+      @focused_items[mode.id] = mode
+      add_focused_container_commands(container)
+
+      targets = focused_block_targets(mode)
+      @focused_mode_destinations[mode.id] = targets.map(&:id)
+      @focused_container_modes[container.id] = [mode.id]
+
+      child_container_ids = []
+      targets.each do |target|
+        @focused_items[target.id] = target
+        next unless target.cosmosys_item_kind_key == 'poris_mode'
+
+        child_container = @candidate_items_by_id[target.parent_issue_id]
+        next unless child_container&.cosmosys_poris? &&
+                    %w[poris_sys poris_param].include?(child_container.cosmosys_item_kind_key) &&
+                    child_container.parent_issue_id == container.id
+
+        child_container_ids << child_container.id
+        include_focused_mode(child_container, target, visiting)
+      end
+
+      @focused_container_destinations[container.id] = [mode.id, *child_container_ids].uniq
+    end
+
+    def include_focused_value(container, value)
+      @focused_items[container.id] = container
+      @focused_items[value.id] = value
+      add_focused_container_commands(container)
+
+      activating_modes = Array(@candidate_children[container.id]).select do |child|
+        child.cosmosys_item_kind_key == 'poris_mode' && Array(@block_targets[child.id]).include?(value.id)
+      end
+      @focused_container_modes[container.id] = activating_modes.map(&:id)
+      @focused_container_destinations[container.id] = activating_modes.map(&:id)
+      activating_modes.each do |mode|
+        @focused_items[mode.id] = mode
+        @focused_mode_destinations[mode.id] = [value.id]
+      end
+    end
+
+    def focused_block_targets(mode)
+      Array(@block_targets[mode.id]).filter_map { |id| @candidate_items_by_id[id] }
+        .select { |target| %w[poris_mode poris_value].include?(target.cosmosys_item_kind_key) }
+    end
+
+    def add_focused_container_commands(container)
+      Array(@candidate_children[container.id]).each do |child|
+        @focused_items[child.id] = child if child.cosmosys_item_kind_key == 'poris_cmd'
       end
     end
 
@@ -192,7 +296,8 @@ module CosmosysPoris
     def add_default_mode(tag, issue: nil)
       return '' unless %w[mode sub-system].include?(tag)
 
-      xml_element('default-mode-id', nil, type: 'integer', nil_value: true) +
+      default_mode_id = @focused_container_modes&.[](issue&.id)&.first
+      xml_element('default-mode-id', default_mode_id, type: 'integer', nil_value: default_mode_id.nil?) +
         if tag == 'mode'
           default_value = destinations_for(issue).find { |target| target.cosmosys_item_kind_key == 'poris_value' }
           xml_element(
@@ -207,6 +312,12 @@ module CosmosysPoris
     end
 
     def destinations_for(issue)
+      if @focused_container_destinations&.key?(issue.id)
+        return @focused_container_destinations.fetch(issue.id).filter_map { |id| @items[id] }
+      elsif @focused_mode_destinations&.key?(issue.id)
+        return @focused_mode_destinations.fetch(issue.id).filter_map { |id| @items[id] }
+      end
+
       case issue.cosmosys_item_kind_key
       when 'poris_sys', 'poris_param'
         Array(@children[issue.id]).select { |child| NODE_TYPES.key?(child.cosmosys_item_kind_key) && child.cosmosys_item_kind_key != 'poris_cmd' }
