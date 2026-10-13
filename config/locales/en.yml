@@ -25,3 +25,146 @@ en:
   field_pr_default: Default
   field_pr_max: Maximum
   field_pr_default_text: Default text
+  cosmosys_poris:
+    spec_preview:
+      chapter:
+        commands: Commands
+        mode_effects: Mode effects
+        operating_modes: Operating modes
+        parameters: Parameters
+        requirements: Requirements
+        systems: Systems
+        values: Values
+      conjunction:
+        and: ' and '
+      datum:
+        bounds_inclusivity: Boundary inclusivity
+        command_effect: Expected command effect
+        command_effect_of: Expected effect of command %{name}
+        command_purpose: Purpose of the command
+        enum_default: Default value
+        enum_default_of: Default value of %{name}
+        enum_meaning: Meaning
+        generic: '%{description} (%{noun} %{name})'
+        meaning_of: Meaning of the %{subject} %{name}
+        meaning_of_enum: Meaning of %{name}
+        mode_purpose: Purpose of the mode
+        parameter_purpose: Purpose of the parameter
+        purpose_of: Purpose of the %{noun} %{name}
+        range_default: Default value of the value range
+        range_maximum: Upper bound of the value range
+        range_meaning: Meaning of the value range
+        range_minimum: Lower bound of the value range
+        range_resolution: Resolution of the value range
+        range_tolerance: Tolerance for verifying the result
+        range_tolerance_of: Tolerance of the value range %{name}
+        range_unit: Unit of the value range
+        system_purpose: Purpose or function of the PORIS system
+        text_constraints: Text constraints
+        text_default: Default text
+        text_default_of: Default text of the possible value %{name}
+        text_meaning: Meaning of the text value
+      description:
+        system: "## Description of %{name}\n\n%{name} contains %{contents}."
+      empty_preview: "## Preview\n\nThis node produces no fragments under the current rules."
+      enum_table:
+        header: '| Possible value | Meaning | Default value |'
+      heading:
+        level_three: '### %{title}'
+        level_two: '## %{title}'
+        model_information: '## Model information'
+        parameter_information: '## Information for parameter %{name}'
+        system_information: '## Information for system %{name}'
+      intro:
+        parameter_required_modes: '%{parameter} must offer the modes %{modes} consumed by %{system}.'
+      note:
+        contains_items: '%{name} contains the %{label} %{items}.'
+        mode_purpose: 'The purpose of mode **%{mode}**%{parent} is %{datum}.'
+        parameter_establishes: 'Parameter **%{parameter}**%{parent} establishes %{datum}.'
+        parameter_modes: 'Parameter **%{parameter}** contains the modes %{modes}.'
+        parameter_values: 'Parameter **%{parameter}** admits the values %{values}.'
+        range_meaning: 'The meaning of the value range **%{name}** is %{datum}.'
+        system_accepts_commands: '%{name} accepts %{command_noun} %{commands}.'
+        system_modes: '%{name} contains the modes %{modes}.'
+        system_purpose: 'The purpose of the %{noun} **%{name}** is %{datum}.'
+        text_meaning: 'The meaning of text value **%{name}** is %{datum}.'
+      noun:
+        command: command
+        enumerated_value: enumerated value
+        mode: mode
+        numeric_value: numeric value
+        parameter: parameter
+        parameters: parameters
+        poris_item: PORIS element
+        poris_system: the PORIS system
+        system: system
+        systems: systems
+        text_value: text value
+        the_command: the command
+        the_commands: the commands
+        value_range: value range
+      phrase:
+        container: 'the %{noun} **%{name}**'
+        list_separator: ', '
+        modes: 'the modes %{modes}'
+        no_modes: no modes
+        no_values: no values
+        none: none
+        parameter_in_mode: 'parameter **%{parameter}** is in mode **%{mode}**'
+        parent_qualifier: ' of %{name}'
+        system_in_mode: 'system **%{system}** is in mode **%{mode}**'
+        the_items: 'the %{label} %{items}'
+        values: 'the values %{values}'
+      requirement:
+        active_float_default: 'When %{context}, if its value is undefined or outside the interval %{range}, it shall take its default value, %{value_default}.'
+        active_float_range: 'When %{context}, its value shall be within the interval %{range}, expressed in %{unit}, with a resolution of %{resolution}.'
+        command_accepted: 'The %{noun} **%{container}** shall accept the command **%{command}**.'
+        command_effect: 'When command **%{command}** of %{container} is invoked, the following effect shall occur: %{effect}.'
+        container_mode_selects_child_mode: 'When %{context} is in mode **%{mode}**, the %{noun} **%{child}** shall be in mode **%{child_mode}**.'
+        container_offers_child: 'The %{noun} **%{container}** shall offer the %{child_noun} **%{child}**.'
+        container_offers_mode: 'The %{noun} **%{container}** shall offer mode **%{mode}**.'
+        enum_available: 'Value **%{value}** shall be available for parameter **%{parameter}**.'
+        float_range_definition: 'Value range **%{name}** shall correspond to interval [%{range}], expressed in %{unit}, with a resolution of %{resolution} and a default value of %{value_default}.'
+        mode_enables_parameter: 'When mode **%{mode}** is selected, parameter **%{parameter}** shall be available.'
+        mode_enables_value: 'When %{context}, value **%{value}** shall be available for parameter **%{parameter}**.'
+        model_command_accepted: 'The PORIS model shall accept command **%{command}**.'
+        model_command_effect: 'When command **%{command}** is invoked, the following effect shall occur: %{effect}.'
+        model_declares_value: 'The PORIS model declares value **%{value}**.'
+        numbered: "#### %{id}\n\n%{text}"
+        parameter_modes_and_values: 'Parameter **%{parameter}** shall offer %{modes} and admit %{values} when the corresponding mode is selected.'
+        parameter_offers_mode: 'Parameter **%{parameter}** shall offer mode **%{mode}**.'
+        system_mode_selects_parameter_mode: 'When system **%{system}** is in mode **%{mode}**, parameter **%{parameter}** shall be in mode **%{parameter_mode}**.'
+        system_offers_parameter: 'System **%{system}** shall offer parameter **%{parameter}**.'
+        text_constraints: 'Text value **%{name}** shall comply with constraints %{constraints}.'
+        value_admitted_by_modes: 'Parameter **%{parameter}** shall admit value **%{value}** when enabled by %{modes}.'
+      section:
+        body: "%{content}\n\n---\n"
+        chapter: "### %{chapter}\n\n%{entries}"
+        divider: "\n\n---\n\n"
+      shared_datums:
+        empty: "## Shared csDatum\n\nNo pending data is required for this scope.\n\n---\n"
+        entry: '- `${%{key}.value}` — %{description}; value: **TBD**.'
+        list: "## Shared csDatum\n\n%{entries}\n\n---\n"
+      topic:
+        parameter_required_modes: Required modes of parameter %{parameter}
+      validation:
+        active_float_range: 'Select the mode that enables %{value} for %{parameter}; verify interval %{range}, its resolution %{resolution}, and restoration to default %{value_default} when the value is missing or outside the interval.'
+        command_accepted: 'Check that the %{noun} %{container} accepts command %{command}.'
+        command_effect: 'Invoke command %{command} of %{container} and check the effect defined in %{effect}.'
+        container_mode_selects_child_mode: 'Activate mode %{mode} and check that %{noun} %{child} is set to mode %{child_mode}.'
+        container_offers_child: 'Check that %{container} offers the %{child_noun} %{child}.'
+        container_offers_mode: 'Check that the %{noun} %{container} offers mode %{mode}.'
+        enum_default: 'Select possible value **%{name}** and check the default value defined in %{value_default}.'
+        float_range_boundaries: 'Test default value %{value_default} and the boundaries of value range [%{range}]; define points using %{unit}, %{resolution}, inclusivity %{inclusivity}, and tolerance %{tolerance}.'
+        mode_enables_parameter: 'Select %{mode} and check that parameter %{parameter} is available.'
+        mode_enables_value: 'Select %{mode} and check that %{value} is an available alternative for %{parameter}.'
+        model_command_accepted: 'Check that command %{command} is available to invoke.'
+        model_command_effect: 'Invoke command %{command} and check the effect defined in %{effect}.'
+        model_declares_value: 'Check that value %{value} is present in the PORIS model.'
+        numbered: "### %{id}\n\n%{text}"
+        parameter_modes_and_values: 'Check that parameter %{parameter} offers %{modes} and the values enabled for each mode.'
+        parameter_offers_mode: 'Check that parameter %{parameter} offers mode %{mode}.'
+        system_mode_selects_parameter_mode: 'Select mode %{mode} in %{system} and check that parameter %{parameter} is set to mode %{parameter_mode}.'
+        system_offers_parameter: 'Check that %{system} offers parameter %{parameter}.'
+        text_constraints: 'Test the default text value and boundary cases defined by %{constraints}.'
+        value_admitted_by_modes: 'Activate one of modes %{modes} and check that %{value} is offered for %{parameter}.'

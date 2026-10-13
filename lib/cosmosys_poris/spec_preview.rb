@@ -12,7 +12,7 @@ module CosmosysPoris
       @requirements = []
       @requirement_description = []
       @requirement_topic_intros = {}
-      @requirement_chapter = 'Requisitos'
+      @requirement_chapter = nil
       @requirement_topic = nil
       @validations = []
       @notes = []
@@ -22,12 +22,15 @@ module CosmosysPoris
     def render
       return Result.new(requirements_markdown: '', validation_markdown: '') unless issue&.cosmosys_poris?
 
-      load_model
-      generate_fragments
-      Result.new(
-        requirements_markdown: document(datums_markdown + notes_markdown + requirements_markdown),
-        validation_markdown: document(datums_markdown + notes_markdown + @validations.join("\n\n"))
-      )
+      issue.project.with_cosmosys_locale do
+        @requirement_chapter = tr('chapter.requirements')
+        load_model
+        generate_fragments
+        Result.new(
+          requirements_markdown: document(datums_markdown + notes_markdown + requirements_markdown),
+          validation_markdown: document(datums_markdown + notes_markdown + @validations.join("\n\n"))
+        )
+      end
     end
 
     private
@@ -96,7 +99,7 @@ module CosmosysPoris
 
     def describe_item(item)
       case item.cosmosys_item_kind_key
-      when 'poris_sys' then describe_container(item, 'sistema')
+      when 'poris_sys' then describe_container(item, tr('noun.system'))
       when 'poris_param' then describe_parameter(item)
       when 'poris_mode' then describe_mode(item)
       when 'poris_value' then describe_value(item)
@@ -106,19 +109,19 @@ module CosmosysPoris
 
     def describe_container(item, noun)
       children = Array(@children[item.id]).select { |child| CONTAINER_KINDS.include?(child.cosmosys_item_kind_key) }
-      missing_datum(item, 'purpose', 'Propósito o función del sistema PORIS')
-      add_note("El propósito del #{noun} **#{name(item)}** es #{datum_reference(item, 'purpose')}.", chapter: name(item))
+      missing_datum(item, 'purpose', tr('datum.system_purpose'))
+      add_note(tr('note.system_purpose', noun: noun, name: name(item), datum: datum_reference(item, 'purpose')), chapter: name(item))
       children.group_by(&:cosmosys_item_kind_key).each do |kind, entries|
         child_noun = poris_noun(kind)
-        child_label = kind == 'poris_param' ? 'parámetros' : 'sistemas'
+        child_label = tr(kind == 'poris_param' ? 'noun.parameters' : 'noun.systems')
         inventory = names(entries.sort_by { |child| [child.csid.to_s, child.id] })
-        add_note("#{name(item)} contiene los #{child_label} #{inventory}.", chapter: name(item))
+        add_note(tr('note.contains_items', name: name(item), label: child_label, items: inventory), chapter: name(item))
         next unless @include_container_requirements != false
 
-        with_requirement_chapter(child_label.capitalize) do
+        with_requirement_chapter(tr(kind == 'poris_param' ? 'chapter.parameters' : 'chapter.systems')) do
           entries.sort_by { |child| [child.csid.to_s, child.id] }.each do |child|
-            add_requirement("El #{noun} **#{name(item)}** debe ofrecer el #{child_noun} **#{name(child)}**.")
-            add_validation("Comprobar que #{name(item)} ofrece el #{child_noun} #{name(child)}.")
+            add_requirement(tr('requirement.container_offers_child', noun: noun, container: name(item), child_noun: child_noun, child: name(child)))
+            add_validation(tr('validation.container_offers_child', container: name(item), child_noun: child_noun, child: name(child)))
           end
         end
       end
@@ -130,7 +133,7 @@ module CosmosysPoris
     def describe_system_scope(system)
       previous_include_requirements = @include_container_requirements
       @include_container_requirements = false
-      describe_container(system, 'sistema')
+      describe_container(system, tr('noun.system'))
       @include_container_requirements = previous_include_requirements
       children = Array(@children[system.id])
       parameters = children.select { |child| child.cosmosys_item_kind_key == 'poris_param' }
@@ -141,37 +144,37 @@ module CosmosysPoris
                          .sort_by { |command| [command.csid.to_s, command.id] }
       unless system_modes.empty?
         mode_names = names(system_modes)
-        add_note("#{name(system)} contiene los modos #{mode_names}.", chapter: name(system))
+        add_note(tr('note.system_modes', name: name(system), modes: mode_names), chapter: name(system))
       end
       unless commands.empty?
-        command_noun = commands.one? ? 'el comando' : 'los comandos'
-        add_note("#{name(system)} acepta #{command_noun} #{names(commands)}.", chapter: name(system))
+        command_noun = tr(commands.one? ? 'noun.the_command' : 'noun.the_commands')
+        add_note(tr('note.system_accepts_commands', name: name(system), command_noun: command_noun, commands: names(commands)), chapter: name(system))
       end
 
-      parameter_sentence = container_inventory_sentence(system, 'poris_param', 'parámetros')
-      system_sentence = container_inventory_sentence(system, 'poris_sys', 'sistemas')
-      mode_sentence = system_modes.empty? ? nil : "los modos #{plain_names(system_modes)}"
+      parameter_sentence = container_inventory_sentence(system, 'poris_param', tr('noun.parameters'))
+      system_sentence = container_inventory_sentence(system, 'poris_sys', tr('noun.systems'))
+      mode_sentence = system_modes.empty? ? nil : tr('phrase.modes', modes: plain_names(system_modes))
       description_parts = [parameter_sentence, system_sentence, mode_sentence].compact
       unless description_parts.empty?
-        @requirement_description << "## Descripción de #{name(system)}\n\n#{name(system)} contiene #{description_parts.join(' y ')}."
+        @requirement_description << tr('description.system', name: name(system), contents: description_parts.join(tr('conjunction.and')))
       end
 
-      with_requirement_chapter('Parámetros') do
+      with_requirement_chapter(tr('chapter.parameters')) do
         parameters.each do |parameter|
-          add_requirement("El sistema **#{name(system)}** debe ofrecer el parámetro **#{name(parameter)}**.")
-          add_validation("Comprobar que #{name(system)} ofrece el parámetro #{name(parameter)}.")
+          add_requirement(tr('requirement.system_offers_parameter', system: name(system), parameter: name(parameter)))
+          add_validation(tr('validation.system_offers_parameter', system: name(system), parameter: name(parameter)))
         end
 
         parameters.each do |parameter|
           consumed_modes = modes_consumed_by(system_modes, parameter)
           next if consumed_modes.empty?
 
-          topic = "Modos necesarios del parámetro #{name(parameter)}"
-          intro = "#{name(parameter)} debe ofrecer los modos #{plain_names(consumed_modes)} que consume #{name(system)}."
+          topic = tr('topic.parameter_required_modes', parameter: name(parameter))
+          intro = tr('intro.parameter_required_modes', parameter: name(parameter), modes: plain_names(consumed_modes), system: name(system))
           with_requirement_topic(topic, intro: intro) do
             consumed_modes.each do |mode|
-              add_requirement("El parámetro **#{name(parameter)}** debe ofrecer el modo **#{name(mode)}**.")
-              add_validation("Comprobar que el parámetro #{name(parameter)} ofrece el modo #{name(mode)}.")
+              add_requirement(tr('requirement.parameter_offers_mode', parameter: name(parameter), mode: name(mode)))
+              add_validation(tr('validation.parameter_offers_mode', parameter: name(parameter), mode: name(mode)))
             end
           end
         end
@@ -179,7 +182,7 @@ module CosmosysPoris
 
       parameters.each { |parameter| describe_parameter_interface(parameter, include_modes: false) }
 
-      with_requirement_chapter('Modos de funcionamiento') do
+      with_requirement_chapter(tr('chapter.operating_modes')) do
         system_modes.each do |mode|
           with_requirement_topic(name(mode)) do
             describe_mode_header(mode)
@@ -196,8 +199,8 @@ module CosmosysPoris
     end
 
     def describe_parameter_interface(parameter, include_modes: true)
-      missing_datum(parameter, 'purpose', 'Significado funcional del parámetro')
-      add_note("El parámetro **#{name(parameter)}**#{parent_qualifier(parameter)} establece #{datum_reference(parameter, 'purpose')}.", chapter: name(parameter))
+      missing_datum(parameter, 'purpose', tr('datum.parameter_purpose'))
+      add_note(tr('note.parameter_establishes', parameter: name(parameter), parent: parent_qualifier(parameter), datum: datum_reference(parameter, 'purpose')), chapter: name(parameter))
       return unless include_modes
 
       Array(@children[parameter.id])
@@ -216,23 +219,23 @@ module CosmosysPoris
 
       describe_parameter_interface(parameter, include_modes: false)
       unless modes.empty?
-        add_note("El parámetro **#{name(parameter)}** contiene los modos #{names(modes)}.", chapter: name(parameter))
+        add_note(tr('note.parameter_modes', parameter: name(parameter), modes: names(modes)), chapter: name(parameter))
       end
       unless values.empty?
-        add_note("El parámetro **#{name(parameter)}** admite los valores #{names(values)}.", chapter: name(parameter))
+        add_note(tr('note.parameter_values', parameter: name(parameter), values: names(values)), chapter: name(parameter))
       end
       @parameter_value_table = enumerated_value_table(values)
       modes.each { |mode| describe_mode_header(mode, offer_requirement: false) }
 
-      with_requirement_chapter('Modos de funcionamiento') do
+      with_requirement_chapter(tr('chapter.operating_modes')) do
         modes.each { |mode| describe_mode_header(mode) }
       end
 
-      with_requirement_chapter('Valores') do
+      with_requirement_chapter(tr('chapter.values')) do
         values.each { |value| describe_value(value) }
       end
 
-      with_requirement_chapter('Efectos de los modos') do
+      with_requirement_chapter(tr('chapter.mode_effects')) do
         modes.each do |mode|
           with_requirement_topic(name(mode)) do
             describe_mode(mode, offer_requirement: false)
@@ -244,12 +247,12 @@ module CosmosysPoris
     def describe_parameter(item)
       modes = Array(@children[item.id]).select { |child| child.cosmosys_item_kind_key == 'poris_mode' }
       values = Array(@children[item.id]).select { |child| child.cosmosys_item_kind_key == 'poris_value' }
-      missing_datum(item, 'purpose', 'Significado funcional del parámetro')
-      mode_description = modes.empty? ? 'ningún modo' : "los modos #{names(modes)}"
-      value_description = values.empty? ? 'ningún valor' : "los valores #{names(values)}"
-      add_note("El parámetro **#{name(item)}**#{parent_qualifier(item)} establece #{datum_reference(item, 'purpose')}.", chapter: name(item))
-      add_requirement("El parámetro **#{name(item)}** debe ofrecer #{mode_description} y admitir #{value_description} cuando se seleccione el modo correspondiente.")
-      add_validation("Comprobar que el parámetro #{name(item)} ofrece #{mode_description} y los valores habilitados para cada modo.")
+      missing_datum(item, 'purpose', tr('datum.parameter_purpose'))
+      mode_description = modes.empty? ? tr('phrase.no_modes') : tr('phrase.modes', modes: names(modes))
+      value_description = values.empty? ? tr('phrase.no_values') : tr('phrase.values', values: names(values))
+      add_note(tr('note.parameter_establishes', parameter: name(item), parent: parent_qualifier(item), datum: datum_reference(item, 'purpose')), chapter: name(item))
+      add_requirement(tr('requirement.parameter_modes_and_values', parameter: name(item), modes: mode_description, values: value_description))
+      add_validation(tr('validation.parameter_modes_and_values', parameter: name(item), modes: mode_description))
     end
 
     def describe_mode(item, target_kinds: nil, offer_requirement: true)
@@ -260,8 +263,8 @@ module CosmosysPoris
       targets.each do |target|
         case target.cosmosys_item_kind_key
         when 'poris_param'
-          add_requirement("Cuando esté seleccionado el modo **#{name(item)}**, el parámetro **#{name(target)}** debe estar disponible.")
-          add_validation("Seleccionar #{name(item)} y comprobar que el parámetro #{name(target)} está disponible.")
+          add_requirement(tr('requirement.mode_enables_parameter', mode: name(item), parameter: name(target)))
+          add_validation(tr('validation.mode_enables_parameter', mode: name(item), parameter: name(target)))
           subtree(target).drop(1).each { |descendant| describe_item(descendant) }
           describe_parameter(target)
         when 'poris_mode'
@@ -269,13 +272,13 @@ module CosmosysPoris
           next unless target_container && CONTAINER_KINDS.include?(target_container.cosmosys_item_kind_key)
 
           if target_container.cosmosys_item_kind_key == 'poris_param' && container&.cosmosys_item_kind_key == 'poris_sys'
-            add_requirement("Cuando el sistema **#{name(container)}** esté en el modo **#{name(item)}**, el parámetro **#{name(target_container)}** debe estar en el modo **#{name(target)}**.")
-            add_validation("Seleccionar el modo #{name(item)} en #{name(container)} y comprobar que el parámetro #{name(target_container)} queda en el modo #{name(target)}.")
+            add_requirement(tr('requirement.system_mode_selects_parameter_mode', system: name(container), mode: name(item), parameter: name(target_container), parameter_mode: name(target)))
+            add_validation(tr('validation.system_mode_selects_parameter_mode', mode: name(item), system: name(container), parameter: name(target_container), parameter_mode: name(target)))
           else
-            context = container ? "el #{poris_noun(container.cosmosys_item_kind_key)} **#{name(container)}**" : 'el sistema PORIS'
+            context = container ? tr('phrase.container', noun: poris_noun(container.cosmosys_item_kind_key), name: name(container)) : tr('noun.poris_system')
             target_noun = poris_noun(target_container.cosmosys_item_kind_key)
-            add_requirement("Cuando #{context} esté en el modo **#{name(item)}**, el #{target_noun} **#{name(target_container)}** debe estar en el modo **#{name(target)}**.")
-            add_validation("Activar el modo #{name(item)} y comprobar que el #{target_noun} #{name(target_container)} queda en el modo #{name(target)}.")
+            add_requirement(tr('requirement.container_mode_selects_child_mode', context: context, mode: name(item), noun: target_noun, child: name(target_container), child_mode: name(target)))
+            add_validation(tr('validation.container_mode_selects_child_mode', mode: name(item), noun: target_noun, child: name(target_container), child_mode: name(target)))
           end
         when 'poris_value'
           parameter = @items_by_id[target.parent_issue_id]
@@ -284,22 +287,22 @@ module CosmosysPoris
             if target.pr_value_kind == 'float'
               describe_active_float_value(target, parameter, mode_context)
             else
-              add_requirement("Cuando #{mode_context}, el valor **#{name(target)}** debe estar disponible para el parámetro **#{name(parameter)}**.")
+              add_requirement(tr('requirement.mode_enables_value', context: mode_context, value: name(target), parameter: name(parameter)))
             end
           end
-          add_validation("Seleccionar #{name(item)} y comprobar que #{name(target)} es una alternativa disponible para #{name(parameter)}.") if parameter
+          add_validation(tr('validation.mode_enables_value', mode: name(item), value: name(target), parameter: name(parameter))) if parameter
         end
       end
     end
 
     def describe_mode_header(item, container: @items_by_id[item.parent_issue_id], offer_requirement: true)
-      missing_datum(item, 'purpose', 'Propósito del modo')
-      add_note("El propósito del modo **#{name(item)}**#{parent_qualifier(item)} es #{datum_reference(item, 'purpose')}.", chapter: name(item))
+      missing_datum(item, 'purpose', tr('datum.mode_purpose'))
+      add_note(tr('note.mode_purpose', mode: name(item), parent: parent_qualifier(item), datum: datum_reference(item, 'purpose')), chapter: name(item))
       return unless container && CONTAINER_KINDS.include?(container.cosmosys_item_kind_key)
 
       noun = poris_noun(container.cosmosys_item_kind_key)
-      add_requirement("El #{noun} **#{name(container)}** debe ofrecer el modo **#{name(item)}**.") if offer_requirement
-      add_validation("Comprobar que el #{noun} #{name(container)} ofrece el modo #{name(item)}.")
+      add_requirement(tr('requirement.container_offers_mode', noun: noun, container: name(container), mode: name(item))) if offer_requirement
+      add_validation(tr('validation.container_offers_mode', noun: noun, container: name(container), mode: name(item)))
     end
 
     def describe_mode_scope(item)
@@ -314,15 +317,15 @@ module CosmosysPoris
       if parameter
         if include_availability
           if item.pr_value_kind == 'enum'
-            add_requirement("El valor **#{name(item)}** debe estar disponible para el parámetro **#{name(parameter)}**.")
+            add_requirement(tr('requirement.enum_available', value: name(item), parameter: name(parameter)))
           else
-            add_requirement("El parámetro **#{name(parameter)}** debe admitir el valor **#{name(item)}** cuando esté habilitado por #{names(related_modes)}.")
+            add_requirement(tr('requirement.value_admitted_by_modes', parameter: name(parameter), value: name(item), modes: names(related_modes)))
           end
-          add_validation("Activar uno de los modos #{names(related_modes)} y comprobar que #{name(item)} se ofrece para #{name(parameter)}.")
+          add_validation(tr('validation.value_admitted_by_modes', modes: names(related_modes), value: name(item), parameter: name(parameter)))
         end
       else
-        add_requirement("El modelo PORIS declara el valor **#{name(item)}**.")
-        add_validation("Comprobar que el valor #{name(item)} está presente en el modelo PORIS.")
+        add_requirement(tr('requirement.model_declares_value', value: name(item)))
+        add_validation(tr('validation.model_declares_value', value: name(item)))
       end
       add_value_uncertainties(item)
     end
@@ -333,80 +336,80 @@ module CosmosysPoris
 
     def mode_context_for(mode, container)
       if container&.cosmosys_item_kind_key == 'poris_sys'
-        "el sistema **#{name(container)}** esté en el modo **#{name(mode)}**"
+        tr('phrase.system_in_mode', system: name(container), mode: name(mode))
       else
-        "el parámetro **#{name(container)}** esté en el modo **#{name(mode)}**"
+        tr('phrase.parameter_in_mode', parameter: name(container), mode: name(mode))
       end
     end
 
     def describe_active_float_value(value, parameter, mode_context)
-      missing_datum(value, 'unit', 'Unidad del rango de valores')
-      missing_datum(value, 'resolution', 'Resolución del rango de valores')
-      missing_datum(value, 'bounds_inclusivity', 'Inclusividad de los límites')
-      missing_datum(value, 'minimum', 'Límite inferior del rango de valores') if value.pr_min.nil?
-      missing_datum(value, 'maximum', 'Límite superior del rango de valores') if value.pr_max.nil?
-      missing_datum(value, 'default', 'Valor predeterminado del rango de valores') if value.pr_default.nil?
+      missing_datum(value, 'unit', tr('datum.range_unit'))
+      missing_datum(value, 'resolution', tr('datum.range_resolution'))
+      missing_datum(value, 'bounds_inclusivity', tr('datum.bounds_inclusivity'))
+      missing_datum(value, 'minimum', tr('datum.range_minimum')) if value.pr_min.nil?
+      missing_datum(value, 'maximum', tr('datum.range_maximum')) if value.pr_max.nil?
+      missing_datum(value, 'default', tr('datum.range_default')) if value.pr_default.nil?
 
       minimum = value.pr_min || datum_reference(value, 'minimum')
       maximum = value.pr_max || datum_reference(value, 'maximum')
       default = value.pr_default || datum_reference(value, 'default')
       range = "[#{minimum}…#{maximum}]"
-      add_requirement("Cuando #{mode_context}, su valor debe estar dentro del intervalo #{range}, expresado en #{datum_reference(value, 'unit')}, definido con una resolución #{datum_reference(value, 'resolution')}.")
-      add_requirement("Cuando #{mode_context}, si su valor no está definido o queda fuera del intervalo #{range}, tomará su valor predeterminado, que es #{default}.")
-      add_validation("Seleccionar el modo que habilita #{name(value)} en #{name(parameter)} y comprobar el intervalo #{range}, su resolución #{datum_reference(value, 'resolution')} y la recuperación al valor predeterminado #{default} cuando el valor falte o quede fuera del intervalo.")
+      add_requirement(tr('requirement.active_float_range', context: mode_context, range: range, unit: datum_reference(value, 'unit'), resolution: datum_reference(value, 'resolution')))
+      add_requirement(tr('requirement.active_float_default', context: mode_context, range: range, value_default: default))
+      add_validation(tr('validation.active_float_range', value: name(value), parameter: name(parameter), range: range, resolution: datum_reference(value, 'resolution'), value_default: default))
     end
 
     def add_value_uncertainties(item)
       case item.pr_value_kind
       when 'float'
-        missing_datum(item, 'meaning', 'Significado del rango de valores')
-        add_note("El significado del rango de valores **#{name(item)}** es #{datum_reference(item, 'meaning')}.", chapter: name(item))
-        missing_datum(item, 'unit', 'Unidad del rango de valores')
-        missing_datum(item, 'resolution', 'Resolución del rango de valores')
-        missing_datum(item, 'bounds_inclusivity', 'Inclusividad de los límites')
-        missing_datum(item, 'minimum', 'Límite inferior del rango de valores') if item.pr_min.nil?
-        missing_datum(item, 'maximum', 'Límite superior del rango de valores') if item.pr_max.nil?
-        missing_datum(item, 'default', 'Valor predeterminado del rango de valores') if item.pr_default.nil?
-        missing_datum(item, 'tolerance', 'Tolerancia para verificar el resultado')
+        missing_datum(item, 'meaning', tr('datum.range_meaning'))
+        add_note(tr('note.range_meaning', name: name(item), datum: datum_reference(item, 'meaning')), chapter: name(item))
+        missing_datum(item, 'unit', tr('datum.range_unit'))
+        missing_datum(item, 'resolution', tr('datum.range_resolution'))
+        missing_datum(item, 'bounds_inclusivity', tr('datum.bounds_inclusivity'))
+        missing_datum(item, 'minimum', tr('datum.range_minimum')) if item.pr_min.nil?
+        missing_datum(item, 'maximum', tr('datum.range_maximum')) if item.pr_max.nil?
+        missing_datum(item, 'default', tr('datum.range_default')) if item.pr_default.nil?
+        missing_datum(item, 'tolerance', tr('datum.range_tolerance'))
         minimum = item.pr_min || datum_reference(item, 'minimum')
         maximum = item.pr_max || datum_reference(item, 'maximum')
         default = item.pr_default || datum_reference(item, 'default')
         range = [minimum, maximum].join('…')
-        add_requirement("El rango de valores **#{name(item)}** corresponde al intervalo [#{range}], expresado en #{datum_reference(item, 'unit')}, definido con una resolución #{datum_reference(item, 'resolution')} y cuyo valor predeterminado es #{default}.")
-        add_validation("Probar el valor predeterminado #{default} y las fronteras del rango de valores [#{range}]; definir puntos con #{datum_reference(item, 'unit')}, #{datum_reference(item, 'resolution')}, inclusividad #{datum_reference(item, 'bounds_inclusivity')} y tolerancia #{datum_reference(item, 'tolerance')}.")
+        add_requirement(tr('requirement.float_range_definition', name: name(item), range: range, unit: datum_reference(item, 'unit'), resolution: datum_reference(item, 'resolution'), value_default: default))
+        add_validation(tr('validation.float_range_boundaries', value_default: default, range: range, unit: datum_reference(item, 'unit'), resolution: datum_reference(item, 'resolution'), inclusivity: datum_reference(item, 'bounds_inclusivity'), tolerance: datum_reference(item, 'tolerance')))
       when 'text'
-        missing_datum(item, 'meaning', 'Significado del valor textual')
-        add_note("El significado del valor textual **#{name(item)}** es #{datum_reference(item, 'meaning')}.", chapter: name(item))
-        missing_datum(item, 'constraints', 'Restricciones del texto')
-        missing_datum(item, 'default', 'Texto predeterminado') if item.pr_default_text.blank?
-        add_requirement("El valor textual **#{name(item)}** debe cumplir las restricciones #{datum_reference(item, 'constraints')}.")
-        add_validation("Probar el valor textual predeterminado y los casos límite definidos en #{datum_reference(item, 'constraints')}.")
+        missing_datum(item, 'meaning', tr('datum.text_meaning'))
+        add_note(tr('note.text_meaning', name: name(item), datum: datum_reference(item, 'meaning')), chapter: name(item))
+        missing_datum(item, 'constraints', tr('datum.text_constraints'))
+        missing_datum(item, 'default', tr('datum.text_default')) if item.pr_default_text.blank?
+        add_requirement(tr('requirement.text_constraints', name: name(item), constraints: datum_reference(item, 'constraints')))
+        add_validation(tr('validation.text_constraints', constraints: datum_reference(item, 'constraints')))
       else
-        missing_datum(item, 'meaning', 'Significado del valor posible')
-        missing_datum(item, 'default', 'Valor predeterminado del valor posible')
-        add_validation("Seleccionar el valor posible **#{name(item)}** y comprobar el valor predeterminado definido en #{datum_reference(item, 'default')}.")
+        missing_datum(item, 'meaning', tr('datum.enum_meaning'))
+        missing_datum(item, 'default', tr('datum.enum_default'))
+        add_validation(tr('validation.enum_default', name: name(item), value_default: datum_reference(item, 'default')))
       end
     end
 
     def describe_command(item)
       container = @items_by_id[item.parent_issue_id]
-      missing_datum(item, 'purpose', 'Propósito del comando')
-      missing_datum(item, 'effect', 'Efecto esperado del comando')
+      missing_datum(item, 'purpose', tr('datum.command_purpose'))
+      missing_datum(item, 'effect', tr('datum.command_effect'))
       if container
         noun = poris_noun(container.cosmosys_item_kind_key)
-        with_requirement_chapter('Comandos') do
-          add_requirement("El #{noun} **#{name(container)}** debe aceptar el comando **#{name(item)}**.")
-          add_requirement("Cuando se invoque el comando **#{name(item)}** de #{name(container)}, se producirá el efecto: #{datum_reference(item, 'effect')}.")
+        with_requirement_chapter(tr('chapter.commands')) do
+          add_requirement(tr('requirement.command_accepted', noun: noun, container: name(container), command: name(item)))
+          add_requirement(tr('requirement.command_effect', command: name(item), container: name(container), effect: datum_reference(item, 'effect')))
         end
-        add_validation("Comprobar que el #{noun} #{name(container)} acepta el comando #{name(item)}.")
-        add_validation("Invocar el comando #{name(item)} de #{name(container)} y comprobar el efecto definido en #{datum_reference(item, 'effect')}.")
+        add_validation(tr('validation.command_accepted', noun: noun, container: name(container), command: name(item)))
+        add_validation(tr('validation.command_effect', command: name(item), container: name(container), effect: datum_reference(item, 'effect')))
       else
-        with_requirement_chapter('Comandos') do
-          add_requirement("El modelo PORIS debe aceptar el comando **#{name(item)}**.")
-          add_requirement("Cuando se invoque el comando **#{name(item)}**, se producirá el efecto: #{datum_reference(item, 'effect')}.")
+        with_requirement_chapter(tr('chapter.commands')) do
+          add_requirement(tr('requirement.model_command_accepted', command: name(item)))
+          add_requirement(tr('requirement.model_command_effect', command: name(item), effect: datum_reference(item, 'effect')))
         end
-        add_validation("Comprobar que el comando #{name(item)} está disponible para su invocación.")
-        add_validation("Invocar el comando #{name(item)} y comprobar el efecto definido en #{datum_reference(item, 'effect')}.")
+        add_validation(tr('validation.model_command_accepted', command: name(item)))
+        add_validation(tr('validation.model_command_effect', command: name(item), effect: datum_reference(item, 'effect')))
       end
     end
 
@@ -418,34 +421,34 @@ module CosmosysPoris
     def datum_description(item, property, description)
       noun = datum_item_noun(item)
       item_name = "**#{name(item)}**"
-      return "Propósito del #{noun} #{item_name}" if property == 'purpose'
-      return "Tolerancia del rango de valores #{item_name}" if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'float' && property == 'tolerance'
-      return "Texto predeterminado del valor posible #{item_name}" if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'text' && property == 'default'
+      return tr('datum.purpose_of', noun: noun, name: item_name) if property == 'purpose'
+      return tr('datum.range_tolerance_of', name: item_name) if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'float' && property == 'tolerance'
+      return tr('datum.text_default_of', name: item_name) if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'text' && property == 'default'
       if item.cosmosys_item_kind_key == 'poris_value' && property == 'meaning'
-        return "Significado de #{item_name}" if item.pr_value_kind == 'enum'
+        return tr('datum.meaning_of_enum', name: item_name) if item.pr_value_kind == 'enum'
 
-        meaning_subject = item.pr_value_kind == 'float' ? 'rango de valores' : 'valor textual'
-        return "Significado del #{meaning_subject} #{item_name}"
+        meaning_subject = item.pr_value_kind == 'float' ? tr('noun.value_range') : tr('noun.text_value')
+        return tr('datum.meaning_of', subject: meaning_subject, name: item_name)
       end
-      return "Valor predeterminado de #{item_name}" if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'enum' && property == 'default'
-      return "Efecto esperado del comando #{item_name}" if item.cosmosys_item_kind_key == 'poris_cmd' && property == 'effect'
+      return tr('datum.enum_default_of', name: item_name) if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'enum' && property == 'default'
+      return tr('datum.command_effect_of', name: item_name) if item.cosmosys_item_kind_key == 'poris_cmd' && property == 'effect'
 
-      "#{description} (#{noun} #{item_name})"
+      tr('datum.generic', description: description, noun: noun, name: item_name)
     end
 
     def datum_item_noun(item)
       case item.cosmosys_item_kind_key
-      when 'poris_sys' then 'sistema'
-      when 'poris_param' then 'parámetro'
-      when 'poris_mode' then 'modo'
+      when 'poris_sys' then tr('noun.system')
+      when 'poris_param' then tr('noun.parameter')
+      when 'poris_mode' then tr('noun.mode')
       when 'poris_value'
         case item.pr_value_kind
-        when 'float' then 'valor numérico'
-        when 'text' then 'valor textual'
-        else 'valor enumerado'
+        when 'float' then tr('noun.numeric_value')
+        when 'text' then tr('noun.text_value')
+        else tr('noun.enumerated_value')
         end
-      when 'poris_cmd' then 'comando'
-      else 'elemento PORIS'
+      when 'poris_cmd' then tr('noun.command')
+      else tr('noun.poris_item')
       end
     end
 
@@ -458,12 +461,12 @@ module CosmosysPoris
     end
 
     def datums_markdown
-      return "## csDatum compartidos\n\nNo se requieren datos pendientes para este alcance.\n\n---\n" if @datums.empty?
+      return tr('shared_datums.empty') if @datums.empty?
 
       entries = @datums.values.sort_by { |datum| datum[:key] }.map do |datum|
-        "- `${#{datum[:key]}.value}` — #{datum[:description]}; valor: **TBD**."
+        tr('shared_datums.entry', key: datum[:key], description: datum[:description])
       end
-      "## csDatum compartidos\n\n#{entries.join("\n")}\n\n---\n"
+      tr('shared_datums.list', entries: entries.join("\n"))
     end
 
     def enumerated_value_table(values)
@@ -471,11 +474,11 @@ module CosmosysPoris
       return if enumerated_values.empty?
 
       rows = enumerated_values.map do |value|
-        missing_datum(value, 'meaning', 'Significado del valor posible')
-        missing_datum(value, 'default', 'Valor predeterminado del valor posible')
+        missing_datum(value, 'meaning', tr('datum.enum_meaning'))
+        missing_datum(value, 'default', tr('datum.enum_default'))
         "| **#{name(value)}** | #{datum_reference(value, 'meaning')} | #{datum_reference(value, 'default')} |"
       end
-      (["| Valor posible | Significado | Valor predeterminado |", '| --- | --- | --- |'] + rows).join("\n")
+      ([tr('enum_table.header'), '| --- | --- | --- |'] + rows).join("\n")
     end
 
     def add_note(text, chapter:)
@@ -486,16 +489,16 @@ module CosmosysPoris
       return '' if @notes.empty?
 
       if issue.cosmosys_item_kind_key == 'poris_sys'
-        heading = "## Información del sistema #{name(issue)}"
+        heading = tr('heading.system_information', name: name(issue))
         entries = @notes.uniq.map { |note| "- #{note[:text]}" }.join("\n")
-        return "#{heading}\n\n#{entries}\n\n---\n"
+        return tr('section.body', content: [heading, entries].join("\n\n"))
       end
 
       if issue.cosmosys_item_kind_key == 'poris_param'
-        heading = "## Información del parámetro #{name(issue)}"
+        heading = tr('heading.parameter_information', name: name(issue))
         entries = @notes.uniq.map { |note| "- #{note[:text]}" }.join("\n")
         content = [heading, entries, @parameter_value_table].compact_blank.join("\n\n")
-        return "#{content}\n\n---\n"
+        return tr('section.body', content: content)
       end
 
       chapters = @notes.uniq.group_by { |note| note[:chapter] }
@@ -504,11 +507,11 @@ module CosmosysPoris
         if issue.cosmosys_item_kind_key == 'poris_sys' && chapter == name(issue)
           entries
         else
-          "### #{chapter}\n\n#{entries}"
+          tr('section.chapter', chapter: chapter, entries: entries)
         end
       end
-      heading = issue.cosmosys_item_kind_key == 'poris_sys' ? "## Información del sistema #{name(issue)}" : '## Información del modelo'
-      "#{heading}\n\n#{content.join("\n\n")}\n\n---\n"
+      heading = issue.cosmosys_item_kind_key == 'poris_sys' ? tr('heading.system_information', name: name(issue)) : tr('heading.model_information')
+      tr('section.body', content: [heading, content.join("\n\n")].join("\n\n"))
     end
 
     def add_requirement(text)
@@ -523,23 +526,23 @@ module CosmosysPoris
       sections = @requirement_description.dup
       requirement_id = 0
       @requirements.group_by { |requirement| requirement[:chapter] }.each do |chapter, entries|
-        content = ["## #{chapter}"]
+        content = [tr('heading.level_two', title: chapter)]
         active_topic = nil
         entries.each do |requirement|
           if requirement[:topic] != active_topic
             active_topic = requirement[:topic]
             if active_topic.present?
-              content << "### #{active_topic}"
+              content << tr('heading.level_three', title: active_topic)
               intro = @requirement_topic_intros[[chapter, active_topic]]
               content << intro if intro.present?
             end
           end
           requirement_id += 1
-          content << ("#### R-%04d\n\n%s" % [requirement_id, requirement[:text]])
+          content << tr('requirement.numbered', id: format('R-%04d', requirement_id), text: requirement[:text])
         end
         sections << content.join("\n\n")
       end
-      sections.join("\n\n---\n\n")
+      sections.join(tr('section.divider'))
     end
 
     def with_requirement_chapter(chapter)
@@ -563,7 +566,7 @@ module CosmosysPoris
       entries = Array(@children[container.id]).select { |child| child.cosmosys_item_kind_key == kind }
       return if entries.empty?
 
-      "los #{label} #{plain_names(entries.sort_by { |child| [child.csid.to_s, child.id] })}"
+      tr('phrase.the_items', label: label, items: plain_names(entries.sort_by { |child| [child.csid.to_s, child.id] }))
     end
 
     def modes_consumed_by(system_modes, parameter)
@@ -579,28 +582,28 @@ module CosmosysPoris
 
     def parent_qualifier(item)
       parent = @items_by_id[item.parent_issue_id]
-      " de #{name(parent)}" if parent
+      tr('phrase.parent_qualifier', name: name(parent)) if parent
     end
 
     def add_validation(text)
-      @validations << "### V-%04d\n\n#{text}" % (@validations.length + 1)
+      @validations << tr('validation.numbered', id: format('V-%04d', @validations.length + 1), text: text)
     end
 
     def document(content)
-      content.presence || "## Vista previa\n\nEste nodo no genera fragmentos con las reglas actuales."
+      content.presence || tr('empty_preview')
     end
 
     def names(items)
       values = items.map { |item| "**#{name(item)}**" }.uniq
-      values.empty? ? 'ninguna' : values.join(', ')
+      values.empty? ? tr('phrase.none') : values.join(tr('phrase.list_separator'))
     end
 
     def poris_noun(kind)
-      kind == 'poris_sys' ? 'sistema' : 'parámetro'
+      tr(kind == 'poris_sys' ? 'noun.system' : 'noun.parameter')
     end
 
-    def plural_por(noun, count)
-      noun == 'sistema' ? (count == 1 ? 'el sistema' : 'los sistemas') : (count == 1 ? 'el parámetro' : 'los parámetros')
+    def tr(key, **options)
+      I18n.t("cosmosys_poris.spec_preview.#{key}", **options)
     end
 
     def name(item)

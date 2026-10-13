@@ -73,6 +73,10 @@ por clave semántica, para que requisitos y validación puedan referirse al mism
 dato pendiente. Los IDs `R-XXXX` y `V-XXXX` son provisionales y se calculan para
 la vista; no son IDs persistidos. Las vistas se generan síncronamente al abrir
 la ficha, no escriben en Redmine y todavía son experimentales.
+Las plantillas Markdown están en los ficheros de locale inglés y español y se
+resuelven con el idioma configurado en el proyecto, no con el idioma de
+interfaz del usuario. Admiten interpolaciones nombradas de I18n para los
+nombres PORIS, referencias, límites y demás contenido generado.
 
 Los propósitos no definidos se presentan como notas informativas con su
 referencia de valor `${poris.<CSID>.purpose.value}`, no con un `TBD` literal.
