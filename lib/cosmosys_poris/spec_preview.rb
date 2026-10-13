@@ -280,12 +280,12 @@ module CosmosysPoris
         when 'poris_value'
           parameter = @items_by_id[target.parent_issue_id]
           if parameter
-            mode_context = if container&.cosmosys_item_kind_key == 'poris_sys'
-                             "el sistema **#{name(container)}** esté en el modo **#{name(item)}**"
-                           else
-                             "el parámetro **#{name(container)}** esté en el modo **#{name(item)}**"
-                           end
-            add_requirement("Cuando #{mode_context}, el valor **#{name(target)}** debe estar disponible para el parámetro **#{name(parameter)}**.")
+            mode_context = mode_context_for(item, container)
+            if target.pr_value_kind == 'float'
+              describe_active_float_value(target, parameter, mode_context)
+            else
+              add_requirement("Cuando #{mode_context}, el valor **#{name(target)}** debe estar disponible para el parámetro **#{name(parameter)}**.")
+            end
           end
           add_validation("Seleccionar #{name(item)} y comprobar que #{name(target)} es una alternativa disponible para #{name(parameter)}.") if parameter
         end
@@ -329,6 +329,31 @@ module CosmosysPoris
 
     def describe_value_scope(item)
       describe_value(item)
+    end
+
+    def mode_context_for(mode, container)
+      if container&.cosmosys_item_kind_key == 'poris_sys'
+        "el sistema **#{name(container)}** esté en el modo **#{name(mode)}**"
+      else
+        "el parámetro **#{name(container)}** esté en el modo **#{name(mode)}**"
+      end
+    end
+
+    def describe_active_float_value(value, parameter, mode_context)
+      missing_datum(value, 'unit', 'Unidad del rango de valores')
+      missing_datum(value, 'resolution', 'Resolución del rango de valores')
+      missing_datum(value, 'bounds_inclusivity', 'Inclusividad de los límites')
+      missing_datum(value, 'minimum', 'Límite inferior del rango de valores') if value.pr_min.nil?
+      missing_datum(value, 'maximum', 'Límite superior del rango de valores') if value.pr_max.nil?
+      missing_datum(value, 'default', 'Valor predeterminado del rango de valores') if value.pr_default.nil?
+
+      minimum = value.pr_min || datum_reference(value, 'minimum')
+      maximum = value.pr_max || datum_reference(value, 'maximum')
+      default = value.pr_default || datum_reference(value, 'default')
+      range = "[#{minimum}…#{maximum}]"
+      add_requirement("Cuando #{mode_context}, su valor debe estar dentro del intervalo #{range}, expresado en #{datum_reference(value, 'unit')}, definido con una resolución #{datum_reference(value, 'resolution')}.")
+      add_requirement("Cuando #{mode_context}, si su valor no está definido o queda fuera del intervalo #{range}, tomará su valor predeterminado, que es #{default}.")
+      add_validation("Seleccionar el modo que habilita #{name(value)} en #{name(parameter)} y comprobar el intervalo #{range}, su resolución #{datum_reference(value, 'resolution')} y la recuperación al valor predeterminado #{default} cuando el valor falte o quede fuera del intervalo.")
     end
 
     def add_value_uncertainties(item)
@@ -397,10 +422,12 @@ module CosmosysPoris
       return "Tolerancia del rango de valores #{item_name}" if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'float' && property == 'tolerance'
       return "Texto predeterminado del valor posible #{item_name}" if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'text' && property == 'default'
       if item.cosmosys_item_kind_key == 'poris_value' && property == 'meaning'
-        meaning_subject = item.pr_value_kind == 'float' ? 'rango de valores' : item.pr_value_kind == 'text' ? 'valor textual' : 'valor posible'
+        return "Significado de #{item_name}" if item.pr_value_kind == 'enum'
+
+        meaning_subject = item.pr_value_kind == 'float' ? 'rango de valores' : 'valor textual'
         return "Significado del #{meaning_subject} #{item_name}"
       end
-      return "Valor predeterminado del valor posible #{item_name}" if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'enum' && property == 'default'
+      return "Valor predeterminado de #{item_name}" if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'enum' && property == 'default'
       return "Efecto esperado del comando #{item_name}" if item.cosmosys_item_kind_key == 'poris_cmd' && property == 'effect'
 
       "#{description} (#{noun} #{item_name})"
