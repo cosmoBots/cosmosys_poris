@@ -69,8 +69,8 @@ class ConvertPorisBlocksToPrecedes < ActiveRecord::Migration[6.1]
       INNER JOIN issues target ON target.id = issue_relations.issue_to_id
       INNER JOIN trackers target_trackers ON target_trackers.id = target.tracker_id
       WHERE issue_relations.relation_type = 'blocks'
-        AND (source_trackers.csys_item_kind IN (#{quoted_kinds})
-          OR target_trackers.csys_item_kind IN (#{quoted_kinds}))
+        AND source_trackers.csys_item_kind IN (#{quoted_kinds})
+        AND target_trackers.csys_item_kind IN (#{quoted_kinds})
     SQL
   end
 

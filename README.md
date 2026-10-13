@@ -28,10 +28,12 @@ inactividad lógica, no un mecanismo físico. La referencia normativa está en
 Las relaciones `precedes` habilitan modos y valores PORIS; su `delay` es una
 prioridad, no días de retraso: el valor más alto se ofrece primero y los
 empates se resuelven por `csposition`, posición del árbol e ID. La migración
-`002` convierte las relaciones PORIS `blocks` existentes a `precedes` con
-prioridad cero y elimina sus fechas de planificación. Los snapshots preservan
-el `delay`; el formato ODS actual aún no conserva prioridades y debe ampliarse
-antes de usarlo para round-trip de relaciones PORIS con prioridad no nula.
+`002` convierte a `precedes` con prioridad cero sólo las relaciones `blocks`
+entre dos item profiles PORIS, y elimina las fechas de planificación de los
+items PORIS. Las relaciones de otros perfiles quedan intactas. Los snapshots preservan
+el `delay`; el ODS genérico de cosmoSys también lo conserva como
+`CSID (prioridad)` dentro de `precedent_items` cuando no es cero. Los CSID sin
+sufijo siguen representando prioridad cero.
 
 ## Requisitos e instalación
 
