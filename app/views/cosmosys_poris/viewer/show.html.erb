@@ -91,6 +91,8 @@
               <tr data-step-index="<%= index %>">
                 <td class="poris-validation-id"><%= step[:id] %></td>
                 <td><code># <%= step[:title] %>
+# Stimuli: <%= step[:stimuli] %>
+# Expected result: <%= step[:expected] %>
 <%= step[:code] %>
 <%= step[:assertion_code] %></code></td>
                 <td class="poris-validation-log"></td>
@@ -164,6 +166,8 @@
         const passed = result.status === 'passed';
         const failed = result.status === 'failed';
         const unverified = result.status === 'unverified';
+        row.classList.remove('poris-validation-row-failed', 'poris-validation-row-unverified');
+        if (failed || unverified) row.classList.add(`poris-validation-row-${result.status}`);
         log.replaceChildren();
         operations.forEach((operation) => {
           const line = document.createElement('div');
@@ -189,6 +193,7 @@
         button.disabled = true;
         status.textContent = runner.dataset.runningLabel;
         body.querySelectorAll('tr').forEach((row) => {
+          row.classList.remove('poris-validation-row-failed', 'poris-validation-row-unverified');
           const log = row.querySelector('.poris-validation-log');
           const check = row.querySelector('.poris-validation-check');
           log.replaceChildren();
@@ -197,6 +202,7 @@
           check.removeAttribute('aria-label');
         });
         const operationLog = [];
+        let hadUnverifiedStep = false;
         const runStep = async (stepIndex) => {
           const startedAt = Date.now();
           try {
@@ -215,11 +221,12 @@
             operationLog.push(...payload.operations);
             renderRuntime(payload.state, operationLog);
             payload.skipped.forEach((result) => appendResult(result));
-            if (payload.result.status === 'failed' || payload.result.status === 'unverified') {
-              status.textContent = payload.result.status === 'failed' ? runner.dataset.failedLabel : runner.dataset.unverifiedLabel;
+            if (payload.result.status === 'unverified') hadUnverifiedStep = true;
+            if (payload.result.status === 'failed') {
+              status.textContent = runner.dataset.failedLabel;
               button.disabled = false;
             } else if (payload.complete) {
-              status.textContent = runner.dataset.passedLabel;
+              status.textContent = hadUnverifiedStep ? runner.dataset.unverifiedLabel : runner.dataset.passedLabel;
               button.disabled = false;
             } else {
               const remainingDelay = Math.max(0, 500 - (Date.now() - startedAt));

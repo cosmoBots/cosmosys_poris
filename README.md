@@ -160,9 +160,12 @@ accesores, no mediante sus nombres como cadenas.
 estímulo contra el runtime PORIS de la sesión, a razón de dos pasos por segundo;
 consulta el resultado esperado tras cada acción y muestra el resultado en una
 columna a la derecha. Tanto el código Ruby generado como `Run` consumen el
-mismo plan estructurado de estímulos y consultas. Si no existe una consulta
-observable para el efecto de un comando, `Run` lo marca como no verificable y
-detiene el recorrido, en vez de contarlo como aprobado. El plan se muestra en
+misma secuencia estructurada de pasos que genera el plan del proyecto, incluidos
+los mismos IDs y títulos. Los pasos sin una operación ejecutable o cuya
+expectativa depende de un `csDatum` TBD se muestran con un `NotImplementedError`
+y quedan no verificables; `Run` continúa con los siguientes sin contarlos como
+aprobados. Los fallos
+verificados sí detienen el recorrido. El plan se muestra en
 una sola tabla: código de cada paso, log de ejecución y check. El runtime se
 presenta en un sidebar y se actualiza en cada paso. El recorrido se detiene ante el
 primer fallo y marca el resto de pasos como no ejecutados. El estado final se

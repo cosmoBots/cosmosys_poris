@@ -2,7 +2,7 @@ require 'set'
 
 module CosmosysPoris
   class ProjectSpecPreview
-    Result = Struct.new(:requirements_markdown, :validation_markdown, :datums, keyword_init: true)
+    Result = Struct.new(:requirements_markdown, :validation_markdown, :datums, :validation_steps, keyword_init: true)
 
     def initialize(project, user: User.current)
       @project = project
@@ -36,11 +36,15 @@ module CosmosysPoris
 
         datums = previews.flat_map { |_item, preview, _scope| preview.datums }.uniq { |datum| datum[:key].downcase }
         validation_previews = previews.select { |_item, _preview, scope| scope == :root }
+        validation_steps = validation_previews.flat_map { |_item, preview, _scope| preview.validation_steps }.each_with_index.map do |step, index|
+          step.merge(id: format('V-%04d', index + 1))
+        end
 
         Result.new(
           requirements_markdown: document(datums_markdown(datums) + roots_body(previews, :requirements_body, 'requirements')),
           validation_markdown: document(datums_markdown(datums) + roots_body(validation_previews, :validation_body, 'validation')),
-          datums: datums
+          datums: datums,
+          validation_steps: validation_steps
         )
       end
     end

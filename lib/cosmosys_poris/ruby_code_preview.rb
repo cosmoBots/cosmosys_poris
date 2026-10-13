@@ -8,9 +8,10 @@ module CosmosysPoris
     KINDS = %w[poris_sys poris_param poris_mode poris_value poris_cmd].freeze
     CONTAINERS = %w[poris_sys poris_param].freeze
 
-    def initialize(project, user: User.current)
+    def initialize(project, user: User.current, project_preview: nil)
       @project = project
       @user = user
+      @project_preview = project_preview
     end
 
     def render
@@ -21,7 +22,6 @@ module CosmosysPoris
                     .select(&:cosmosys_poris?)
       @items_by_id = @items.index_by(&:id)
       @children = @items.group_by(&:parent_issue_id)
-      @containers = @items.select { |item| CONTAINERS.include?(kind(item)) }
       mode_ids = @items.select { |item| kind(item) == 'poris_mode' }.map(&:id)
       @targets = OptionRelations.grouped_by_mode(mode_ids).transform_values do |relations|
         relations.filter_map { |relation| @items_by_id[relation.issue_to_id] }
@@ -34,7 +34,7 @@ module CosmosysPoris
     # A nil result means that the model does not define an observable query.
     def evaluate_query(query, state)
       query = query.stringify_keys
-      return nil if query['type'] == 'unresolved_command_effect'
+      return nil if query['type'].start_with?('unresolved_')
       return false unless query['type'] == 'state_equals'
 
       expected = query.fetch('expected_state', {}).stringify_keys
@@ -132,13 +132,61 @@ module CosmosysPoris
     end
 
     def validation_steps
-      roots = @items.select { |item| !@items_by_id.key?(item.parent_issue_id) && CONTAINERS.include?(kind(item)) }
-                    .sort_by { |item| order_key(item) }
-      @validation_index = 0
-      @validation_steps = []
       @planning_runtime = RuntimeModel.new(@project, user: @user)
-      roots.each { |root| walk_validation(root, is_root: true) }
-      @validation_steps
+      project_preview = @project_preview || ProjectSpecPreview.new(@project, user: @user).render
+      source_steps = project_preview.validation_steps
+      source_steps.map { |step| compile_validation_step(step) }
+    end
+
+    def compile_validation_step(step)
+      operation = step[:operation]
+      unless operation
+        reason = step[:unverified_reason] || 'This validation stimulus has no executable PORIS operation mapping yet'
+        return step.merge(
+          stimulus: nil,
+          code: '# No executable PORIS operation mapping is defined for this step.',
+          assertion_code: "raise NotImplementedError, #{reason.inspect}",
+          query: { 'type' => 'unresolved_validation', 'reason' => reason },
+          query_description: reason,
+          query_expected: 'an executable stimulus and observable result'
+        )
+      end
+
+      normalized_operation = operation.stringify_keys
+      previous_state = @planning_runtime.state
+      result = @planning_runtime.apply([normalized_operation])
+      operation_result = result.fetch('operations').first
+      observed_state = result.fetch('state')
+      target_id = normalized_operation['node_id'].to_s
+      expected_state = if step[:negative]
+                         previous_state.find { |row| row['node_id'].to_s == target_id }
+                       else
+                         observed_state.find { |row| row['node_id'].to_s == target_id }
+                       end
+      query = if step[:unverified_reason]
+                { 'type' => 'unresolved_validation', 'reason' => step[:unverified_reason] }
+              else
+                {
+                  'type' => 'state_equals',
+                  'node_id' => target_id,
+                  'expected_state' => expected_state.to_h.slice('mode_id', 'mode_name', 'value_id', 'value_name', 'data')
+                }
+              end
+      code = operation_result.fetch('call')
+      code = "command_result = #{code}" if normalized_operation['type'] == 'invoke_command'
+      assertion_code = if query['type'] == 'unresolved_validation'
+                         "raise NotImplementedError, #{query['reason'].inspect}"
+                       else
+                         "raise #{"#{step[:id]} expected result query failed".inspect} unless #{ruby_query_for(query)}"
+                       end
+      step.merge(
+        stimulus: normalized_operation,
+        code: code,
+        assertion_code: assertion_code,
+        query: query,
+        query_description: query_description(query),
+        query_expected: query_expected(query)
+      )
     end
 
     def validation_code(steps)
@@ -151,6 +199,8 @@ module CosmosysPoris
       ]
       steps.each do |step|
         lines << "# #{step[:id]}: #{step[:title]}"
+        lines << "# Stimuli: #{step[:stimuli]}"
+        lines << "# Expected result: #{step[:expected]}"
         lines << step[:code]
         lines << step[:assertion_code]
         lines << ''
@@ -159,138 +209,14 @@ module CosmosysPoris
       lines.join("\n")
     end
 
-    def walk_validation(container, is_root: false)
-      modes = direct_children(container, 'poris_mode')
-      modes = ['Unknown'] + modes if is_root
-      modes.each do |mode|
-        mode_name = mode == 'Unknown' ? 'Unknown' : mode.subject
-        mode_id = mode == 'Unknown' ? "unknown:#{container.id}" : mode.id
-        mode_operation = { type: 'set_mode', node_id: container.id, mode_id: mode_id }
-        emit_step("Request #{container.subject} mode #{mode_name}", mode_operation,
-                  expected: "The #{container.subject} mode is now #{mode_name}.")
-        if mode == 'Unknown'
-          child_containers(container).each do |child|
-            direct_children(child, 'poris_mode').each do |blocked|
-              emit_step("Check that #{child.subject} mode #{blocked.subject} is blocked while #{container.subject} is Unknown",
-                        { type: 'set_mode', node_id: child.id, mode_id: blocked.id },
-                        expected: "The system does not offer mode #{blocked.subject} for #{child.subject}, or rejects the mode change. #{container.subject} remains Unknown.")
-            end
-          end
-          next
-        end
-
-        enabled = Array(@targets[mode.id])
-        child_containers(container).each do |child|
-          child_modes = direct_children(child, 'poris_mode')
-          enabled_modes = enabled.select { |target| kind(target) == 'poris_mode' && target.parent_issue_id == child.id }
-          (child_modes - enabled_modes).each do |blocked|
-            emit_step("Check that #{child.subject} mode #{blocked.subject} is blocked",
-                      { type: 'set_mode', node_id: child.id, mode_id: blocked.id },
-                      expected: "The system does not offer mode #{blocked.subject} for #{child.subject}, or rejects the mode change.")
-          end
-          enabled_modes.each do |child_mode|
-            walk_selected_mode(child, child_mode)
-          end
-        end
-
-        enabled.select { |target| kind(target) == 'poris_value' }.each do |value|
-          parameter = @items_by_id[value.parent_issue_id]
-          next unless parameter
-
-          emit_step("Select value #{value.subject} for #{parameter.subject}",
-                    { type: 'set_value', node_id: parameter.id, value_id: value.id, data: (value.pr_value_kind == 'float' ? value.pr_default : nil) },
-                    expected: "The #{parameter.subject} parameter uses value #{value.subject}.")
-        end
-
-        Array(@children[container.id]).select { |child| kind(child) == 'poris_cmd' }.each do |command|
-          emit_step("Invoke command #{command.subject} on #{container.subject}",
-                    { type: 'invoke_command', node_id: container.id, command_id: command.id },
-                    expected: "The #{container.subject} command #{command.subject} is invoked.")
-        end
-      end
-    end
-
-    # Recurse in depth-first order. Every step has one stimulus, so the runtime
-    # state established by earlier steps remains active without synthetic setup.
-    def walk_selected_mode(container, selected_mode)
-      emit_step("Select #{container.subject} mode #{selected_mode.subject}",
-                { type: 'set_mode', node_id: container.id, mode_id: selected_mode.id },
-                expected: "The #{container.subject} mode is now #{selected_mode.subject}.")
-      enabled = Array(@targets[selected_mode.id])
-      child_containers(container).each do |child|
-        child_modes = direct_children(child, 'poris_mode')
-        enabled_modes = enabled.select { |target| kind(target) == 'poris_mode' && target.parent_issue_id == child.id }
-        (child_modes - enabled_modes).each do |blocked|
-          emit_step("Check that #{child.subject} mode #{blocked.subject} is blocked",
-                    { type: 'set_mode', node_id: child.id, mode_id: blocked.id },
-                    expected: "The system does not offer mode #{blocked.subject} for #{child.subject}, or rejects the mode change.")
-        end
-        enabled_modes.each { |child_mode| walk_selected_mode(child, child_mode) }
-      end
-      enabled.select { |target| kind(target) == 'poris_value' }.each do |value|
-        parameter = @items_by_id[value.parent_issue_id]
-        next unless parameter
-
-        emit_step("Select value #{value.subject} for #{parameter.subject}",
-                  { type: 'set_value', node_id: parameter.id, value_id: value.id, data: (value.pr_value_kind == 'float' ? value.pr_default : nil) },
-                  expected: "The #{parameter.subject} parameter uses value #{value.subject}.")
-      end
-
-      Array(@children[container.id]).select { |child| kind(child) == 'poris_cmd' }.each do |command|
-        emit_step("Invoke command #{command.subject} on #{container.subject}",
-                  { type: 'invoke_command', node_id: container.id, command_id: command.id },
-                  expected: "The #{container.subject} command #{command.subject} is invoked.")
-      end
-    end
-
-    def emit_step(title, operation, expected:)
-      @validation_index += 1
-      normalized_operation = operation.stringify_keys
-      result = @planning_runtime.apply([normalized_operation])
-      operation_result = result.fetch('operations').first
-      observed = result.fetch('state').find { |row| row['node_id'].to_s == normalized_operation['node_id'].to_s }
-      query = if normalized_operation['type'] == 'invoke_command'
-                command = @items_by_id[normalized_operation['command_id'].to_i]
-                {
-                  'type' => 'unresolved_command_effect',
-                  'command_id' => normalized_operation['command_id'],
-                  'reason' => "Define an observable effect query for command #{command&.subject} before running this step"
-                }
-              else
-                {
-                  'type' => 'state_equals',
-                  'node_id' => normalized_operation['node_id'],
-                  'expected_state' => observed.to_h.slice('mode_id', 'mode_name', 'value_id', 'value_name', 'data')
-                }
-              end
-      stimulus_code = operation_result.fetch('call')
-      stimulus_code = "command_result = #{stimulus_code}" if normalized_operation['type'] == 'invoke_command'
-      assertion_code = if query['type'] == 'unresolved_command_effect'
-                         "raise NotImplementedError, #{query['reason'].inspect}"
-                       else
-                         "raise #{"V-#{format('%04d', @validation_index)} expected result query failed".inspect} unless #{ruby_query_for(query)}"
-                       end
-      @validation_steps << {
-        id: "V-#{format('%04d', @validation_index)}",
-        title: title,
-        stimulus: normalized_operation,
-        code: stimulus_code,
-        assertion_code: assertion_code,
-        expected: expected,
-        query: query,
-        query_description: query_description(query),
-        query_expected: query_expected(query)
-      }
-    end
-
     def query_description(query)
-      return query['reason'] if query['type'] == 'unresolved_command_effect'
+      return query['reason'] if query['type'].start_with?('unresolved_')
 
       ruby_query_for(query)
     end
 
     def query_expected(query)
-      return 'NotImplementedError' if query['type'] == 'unresolved_command_effect'
+      return 'NotImplementedError' if query['type'].start_with?('unresolved_')
 
       'true'
     end
@@ -317,14 +243,6 @@ module CosmosysPoris
         end
       end
       predicates.join(' && ')
-    end
-
-    def child_containers(container)
-      Array(@children[container.id]).select { |item| CONTAINERS.include?(kind(item)) }.sort_by { |item| order_key(item) }
-    end
-
-    def direct_children(container, wanted_kind)
-      Array(@children[container.id]).select { |item| kind(item) == wanted_kind }.sort_by { |item| order_key(item) }
     end
 
     def ordered_tree(root)

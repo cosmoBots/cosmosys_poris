@@ -125,6 +125,14 @@
   color: #8a6d3b;
 }
 
+.poris-validation-results tr.poris-validation-row-unverified > td {
+  background-color: #fff4ce;
+}
+
+.poris-validation-results tr.poris-validation-row-failed > td {
+  background-color: #fde8e7;
+}
+
 @media screen and (max-width: 1100px) {
   .poris-project-layout-with-diagram,
   .poris-project-layout-with-runtime-sidebar {

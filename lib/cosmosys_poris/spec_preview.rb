@@ -2,7 +2,7 @@ module CosmosysPoris
   class SpecPreview
     Result = Struct.new(
       :requirements_markdown, :validation_markdown,
-      :requirements_body, :validation_body, :datums,
+      :requirements_body, :validation_body, :datums, :validation_steps,
       keyword_init: true
     )
 
@@ -25,12 +25,16 @@ module CosmosysPoris
     end
 
     def render
-      return Result.new(requirements_markdown: '', validation_markdown: '', requirements_body: '', validation_body: '', datums: []) unless issue&.cosmosys_poris?
+      return Result.new(requirements_markdown: '', validation_markdown: '', requirements_body: '', validation_body: '', datums: [], validation_steps: []) unless issue&.cosmosys_poris?
 
       @locale_project.with_cosmosys_locale do
         @requirement_chapter = tr('chapter.requirements')
         load_model
         generate_fragments
+        @validations = @validations.uniq
+        validation_steps = @validations.each_with_index.map do |step, index|
+          step.merge(id: format('V-%04d', index + 1))
+        end
         validation_body = notes_markdown + validations_markdown
         requirements_body = notes_markdown + requirements_markdown
         shared_datums = datums_markdown
@@ -39,7 +43,8 @@ module CosmosysPoris
           validation_markdown: document(shared_datums + validation_body),
           requirements_body: requirements_body,
           validation_body: validation_body,
-          datums: @datums.values
+          datums: @datums.values,
+          validation_steps: validation_steps
         )
       end
     end
@@ -135,7 +140,8 @@ module CosmosysPoris
         add_validation(
           tr('validation.step.request_root_mode_title', container: name(mode_container), mode: name(mode)),
           stimuli: tr('validation.step.set_root_mode', container: name(mode_container), mode: name(mode)),
-          expected: tr('validation.step.root_mode_now_expected', container: name(mode_container), mode: name(mode))
+          expected: tr('validation.step.root_mode_now_expected', container: name(mode_container), mode: name(mode)),
+          operation: { type: 'set_mode', node_id: mode_container.id, mode_id: mode.id }
         )
         traverse_validation_mode(mode, [mode])
       end
@@ -149,7 +155,8 @@ module CosmosysPoris
       add_validation(
         tr('validation.step.request_root_mode_title', container: name(root), mode: 'Unknown'),
         stimuli: tr('validation.step.set_root_mode', container: name(root), mode: 'Unknown'),
-        expected: tr('validation.step.root_mode_now_expected', container: name(root), mode: 'Unknown')
+        expected: tr('validation.step.root_mode_now_expected', container: name(root), mode: 'Unknown'),
+        operation: { type: 'set_mode', node_id: root.id, mode_id: "unknown:#{root.id}" }
       )
 
       root_state = { container: root, mode: 'Unknown' }
@@ -178,7 +185,8 @@ module CosmosysPoris
             add_validation(
               tr('validation.step.request_root_mode_title', container: name(container), mode: name(mode)),
               stimuli: tr('validation.step.set_root_mode', container: name(container), mode: name(mode)),
-              expected: tr('validation.step.root_mode_now_expected', container: name(container), mode: name(mode))
+              expected: tr('validation.step.root_mode_now_expected', container: name(container), mode: name(mode)),
+              operation: { type: 'set_mode', node_id: container.id, mode_id: mode.id }
             )
             traverse_validation_mode(mode, [mode])
           end
@@ -195,7 +203,8 @@ module CosmosysPoris
       add_validation(
         tr('validation.step.request_root_mode_title', container: name(container), mode: name(mode)),
         stimuli: tr('validation.step.set_root_mode', container: name(container), mode: name(mode)),
-        expected: tr('validation.step.root_mode_now_expected', container: name(container), mode: name(mode))
+        expected: tr('validation.step.root_mode_now_expected', container: name(container), mode: name(mode)),
+        operation: { type: 'set_mode', node_id: container.id, mode_id: mode.id }
       )
       traverse_validation_mode(mode, [mode])
     end
@@ -219,7 +228,8 @@ module CosmosysPoris
           add_validation(
             tr('validation.step.request_enabled_mode_title', mode: name(enabled), container: name(@items_by_id[enabled.parent_issue_id])),
             stimuli: tr('validation.step.request_enabled_mode_stimuli', context: selected_mode_context(selected_modes), container: name(@items_by_id[enabled.parent_issue_id]), mode: name(enabled)),
-            expected: tr('validation.step.requested_mode_accepted_expected', container: name(@items_by_id[enabled.parent_issue_id]), mode: name(enabled))
+            expected: tr('validation.step.requested_mode_accepted_expected', container: name(@items_by_id[enabled.parent_issue_id]), mode: name(enabled)),
+            operation: { type: 'set_mode', node_id: enabled.parent_issue_id, mode_id: enabled.id }
           )
           traverse_validation_mode(enabled, selected_modes + [enabled])
         elsif enabled.cosmosys_item_kind_key == 'poris_value'
@@ -267,7 +277,8 @@ module CosmosysPoris
             mode: name(blocked),
             continuity: active_mode_continuity(selected_modes, root_state: root_state)
           ),
-          negative: true
+          negative: true,
+          operation: { type: 'set_mode', node_id: target_container.id, mode_id: blocked.id }
         )
       else
         parameter = @items_by_id[blocked.parent_issue_id]
@@ -283,7 +294,8 @@ module CosmosysPoris
           tr('validation.step.blocked_value_title', value: name(blocked), parameter: name(parameter)),
           stimuli: value_stimuli,
           expected: expected,
-          negative: true
+          negative: true,
+          operation: { type: 'set_value', node_id: parameter.id, value_id: blocked.id }
         )
       end
     end
@@ -302,7 +314,8 @@ module CosmosysPoris
       add_validation(
         tr('validation.step.enabled_value_title', value: name(value), parameter: name(parameter)),
         stimuli: value_stimuli,
-        expected: tr('validation.step.enabled_value_expected', parameter: name(parameter), value: name(value))
+        expected: tr('validation.step.enabled_value_expected', parameter: name(parameter), value: name(value)),
+        operation: { type: 'set_value', node_id: parameter.id, value_id: value.id }
       )
 
       case value.pr_value_kind
@@ -759,13 +772,17 @@ module CosmosysPoris
       add_validation(
         tr('validation.step.float_default_title', value: name(item)),
         stimuli: default_stimuli,
-        expected: tr('validation.step.float_default_expected', value_default: default)
+        expected: tr('validation.step.float_default_expected', value_default: default),
+        operation: { type: 'set_value', node_id: parameter.id, value_id: item.id, data: item.pr_default }
       )
       { minimum => 'minimum', maximum => 'maximum' }.each do |bound, key|
+        numeric_bound = Float(bound) rescue nil
         add_validation(
           tr("validation.step.float_#{key}_boundary_title", value: name(item), bound: bound),
           stimuli: tr('validation.step.float_set_exact_bound', parameter: name(parameter), value: name(item), bound: bound, unit: unit),
-          expected: tr('validation.step.float_exact_bound_expected', bound: bound, inclusivity: inclusivity)
+          expected: tr('validation.step.float_exact_bound_expected', bound: bound, inclusivity: inclusivity),
+          operation: numeric_bound && { type: 'set_value', node_id: parameter.id, value_id: item.id, data: numeric_bound },
+          unverified_reason: "Boundary acceptance for #{name(item)} depends on #{datum_reference(item, 'bounds_inclusivity')}"
         )
       end
       ["#{minimum} + #{tolerance}", "#{maximum} - #{tolerance}"].each do |point|
@@ -803,7 +820,9 @@ module CosmosysPoris
         add_validation(
           tr('validation.step.command_effect_title', command: name(item), container: name(container)),
           stimuli: tr('validation.step.invoke_command', command: name(item), container: name(container)),
-          expected: tr('validation.step.command_effect_expected', effect: datum_reference(item, 'effect'))
+          expected: tr('validation.step.command_effect_expected', effect: datum_reference(item, 'effect')),
+          operation: { type: 'invoke_command', node_id: container.id, command_id: item.id },
+          unverified_reason: "Define an observable effect query for command #{name(item)} before running this step"
         )
       else
         with_requirement_chapter(tr('chapter.commands')) do
@@ -818,7 +837,9 @@ module CosmosysPoris
         add_validation(
           tr('validation.step.model_command_effect_title', command: name(item)),
           stimuli: tr('validation.step.invoke_model_command', command: name(item)),
-          expected: tr('validation.step.command_effect_expected', effect: datum_reference(item, 'effect'))
+          expected: tr('validation.step.command_effect_expected', effect: datum_reference(item, 'effect')),
+          operation: { type: 'invoke_command', node_id: @items_by_id[item.parent_issue_id]&.id, command_id: item.id },
+          unverified_reason: "Define an observable effect query for command #{name(item)} before running this step"
         )
       end
     end
@@ -1005,10 +1026,10 @@ module CosmosysPoris
       tr('phrase.parent_qualifier', name: name(parent)) if parent
     end
 
-    def add_validation(title, stimuli:, expected:, negative: false)
+    def add_validation(title, stimuli:, expected:, negative: false, operation: nil, unverified_reason: nil)
       return if @suppress_validation
 
-      @validations << { title: title, stimuli: stimuli, expected: expected, negative: negative }
+      @validations << { title: title, stimuli: stimuli, expected: expected, negative: negative, operation: operation, unverified_reason: unverified_reason }
     end
 
     def validations_markdown
@@ -1017,9 +1038,9 @@ module CosmosysPoris
       missing_datum(issue, 'test_preconditions', tr('datum.test_case_preconditions'))
       missing_datum(issue, 'test_postconditions', tr('datum.test_case_postconditions'))
       title = tr('validation.test_case_title', noun: datum_item_noun(issue), name: name(issue))
-      steps = @validations.uniq.each_with_index.map do |step, index|
+      steps = @validations.each_with_index.map do |step, index|
         template = step[:negative] ? 'validation.numbered_negative' : 'validation.numbered'
-        tr(template, id: format('V-%04d', index + 1), title: step[:title], stimuli: step[:stimuli], expected: step[:expected])
+        tr(template, id: step[:id] || format('V-%04d', index + 1), title: step[:title], stimuli: step[:stimuli], expected: step[:expected])
       end.join("\n\n")
       tr('validation.test_case', title: title,
          preconditions: datum_reference(issue, 'test_preconditions'),

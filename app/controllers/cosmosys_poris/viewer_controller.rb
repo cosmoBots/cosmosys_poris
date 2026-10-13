@@ -28,7 +28,7 @@ module CosmosysPoris
       return if @issue
 
       @project_preview = ProjectSpecPreview.new(@project, user: User.current).render
-      @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render if %w[constructor automated_validation].include?(@project_tab)
+      @ruby_code_preview = RubyCodePreview.new(@project, user: User.current, project_preview: @project_preview).render if %w[constructor automated_validation].include?(@project_tab)
       @requirements_plugin_installed = Redmine::Plugin.installed?(:cosmosys_req)
       @validation_plugin_installed = Redmine::Plugin.installed?(:cosmosys_val)
     end
@@ -103,7 +103,11 @@ module CosmosysPoris
       saved_state = runtime_session_state
       runtime.restore(saved_state) if saved_state.any?
       step = steps.fetch(step_index)
-      result = runtime.apply([step[:stimulus]])
+      result = if step[:stimulus]
+                 runtime.apply([step[:stimulus]])
+               else
+                 { 'operations' => [], 'state' => runtime.state }
+               end
       operations = result.fetch('operations')
       state_after = result.fetch('state')
       query_result = generator.evaluate_query(step[:query], state_after)
@@ -116,15 +120,15 @@ module CosmosysPoris
                end
       passed = status == 'passed'
       result_row = { index: step_index, id: step[:id], title: step[:title], status: status }
-      complete = !passed || step_index == steps.length - 1
-      if passed
+      complete = status == 'failed' || step_index == steps.length - 1
+      if %w[passed unverified].include?(status)
         progress[project_key] = step_index + 1
       else
         progress.delete(project_key)
       end
-      skipped = passed ? [] : steps.drop(step_index + 1).each_with_index.map do |remaining, offset|
+      skipped = status == 'failed' ? steps.drop(step_index + 1).each_with_index.map do |remaining, offset|
         { index: step_index + offset + 1, id: remaining[:id], title: remaining[:title], status: 'skipped' }
-      end
+      end : []
 
       save_runtime_session_state(runtime.state)
       response.headers['Cache-Control'] = 'no-store'
