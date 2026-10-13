@@ -71,20 +71,36 @@ En la ficha, los paneles se ordenan como combinado, dependencias y jerárquico;
 las vistas previas de requisitos y validación aparecen después de esos
 diagramas. En alcance `node`, el formulario de un `prSys` omite los `prValue`
 internos de sus parámetros para mantener el mismo límite de interfaz que el
-preview de requisitos; `project` y `node_down` conservan el modelo completo.
+preview de requisitos. Si se selecciona un `prMode` o un `prValue`, tanto en
+alcance `node` como `node_down`, el visor parte del contenedor inmediato y
+recorta el modelo a la rama que mantiene visible el elemento seleccionado;
+los modos de esa rama quedan preseleccionados y no se ofrecen alternativas que
+lo oculten. `project` conserva el modelo completo.
 
 Cada vista empieza por un listado común de candidatos `csDatum`, deduplicado
 por clave semántica, para que requisitos y validación puedan referirse al mismo
 dato pendiente. Los IDs `R-XXXX` y `V-XXXX` son provisionales y se calculan para
 la vista; no son IDs persistidos. Las vistas se generan síncronamente al abrir
-la ficha, no escriben en Redmine y todavía son experimentales.
+la ficha y todavía son experimentales. Las claves son compatibles con el
+diccionario cosmoSys: `POR-0008.purpose` se representa como
+`POR_0008_purpose` y la referencia es `${POR_0008_purpose.value}`.
+
+En la vista PORIS del proyecto se agregan los previews de requisitos y
+validación para las raíces PORIS del proyecto y sus descendientes. Si
+`cosmosys_req` o `cosmosys_val` están instalados, aparecen botones de
+generación/sincronización con un ACK; esas operaciones aún no crean los
+proyectos correspondientes. El botón de `csDatum` sí abre un preflight y crea
+solo las definiciones que faltan. El destino se elige entre proyectos del mismo
+árbol que tengan habilitado `csDatum` y donde el usuario pueda añadir ítems.
+Los valores existentes se conservan y los nuevos empiezan como `TBD`.
 Las plantillas Markdown están en los ficheros de locale inglés y español y se
 resuelven con el idioma configurado en el proyecto, no con el idioma de
 interfaz del usuario. Admiten interpolaciones nombradas de I18n para los
 nombres PORIS, referencias, límites y demás contenido generado.
 
-Los propósitos no definidos se presentan como notas informativas con su
-referencia de valor `${poris.<CSID>.purpose.value}`, no con un `TBD` literal.
+Los propósitos no definidos se presentan como notas informativas con una
+referencia de valor compatible con el diccionario, por ejemplo
+`${POR_0008_purpose.value}`, no con un `TBD` literal.
 Las notas se organizan en
 capítulos Markdown sin numeración, como anticipo de futuros `csInfo`. En las
 vistas de `prSys` y `prParam` aparecen en una lista plana bajo «Información del

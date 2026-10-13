@@ -19,6 +19,11 @@ en:
   label_cosmosys_poris_scope_node: Node
   label_cosmosys_poris_scope_project: Project
   label_cosmosys_poris_scope_node_down: Node & descendants
+  label_cosmosys_poris_project_preview: Generated requirements and validation previews
+  label_cosmosys_poris_generate_requirements: Generate/sync requirements project
+  label_cosmosys_poris_generate_validation: Generate/sync validation plan
+  label_cosmosys_poris_generate_datums: Generate shared csDatum
+  text_cosmosys_poris_preview_ack: This action is acknowledged, but project generation and synchronization are not implemented yet.
   field_pr_src_label: PORIS source label
   field_pr_value_kind: Value kind
   field_pr_min: Minimum
@@ -67,6 +72,11 @@ en:
       description:
         system: "## Description of %{name}\n\n%{name} contains %{contents}."
       empty_preview: "## Preview\n\nThis node produces no fragments under the current rules."
+      project_preview:
+        requirements: '## Project requirements preview'
+        root: '### PORIS root: %{name}'
+        parameter_scope: '### Parameter detail: %{name}'
+        validation: '## Project validation preview'
       enum_table:
         header: '| Possible value | Meaning | Default value |'
       heading:
@@ -143,19 +153,19 @@ en:
         divider: "\n\n---\n\n"
       shared_datums:
         empty: "## Shared csDatum\n\nNo pending data is required for this scope.\n\n---\n"
-        entry: '- `${%{key}.value}` — %{description}; value: **TBD**.'
+        entry: '- `${%{key}.value}` — %{description}; value: **${%{key}.value}**.'
         list: "## Shared csDatum\n\n%{entries}\n\n---\n"
       topic:
         parameter_required_modes: Required modes of parameter %{parameter}
       validation:
-        active_float_range: 'Select the mode that enables %{value} for %{parameter}; verify interval %{range}, its resolution %{resolution}, and restoration to default %{value_default} when the value is missing or outside the interval.'
+        active_float_range: 'Select the mode that enables %{value} for %{parameter}. Leave the value unset and verify that it becomes the default (%{value_default}). Then test %{minimum} - %{tolerance} and %{maximum} + %{tolerance} as out-of-range inputs: each must be rejected and restore the default. Test %{minimum} + %{tolerance} and %{maximum} - %{tolerance} as in-range inputs, respecting resolution %{resolution}; exact-boundary acceptance at %{minimum} and %{maximum} is determined by inclusivity %{inclusivity}.'
         command_accepted: 'Check that the %{noun} %{container} accepts command %{command}.'
         command_effect: 'Invoke command %{command} of %{container} and check the effect defined in %{effect}.'
         container_mode_selects_child_mode: 'Activate mode %{mode} and check that %{noun} %{child} is set to mode %{child_mode}.'
         container_offers_child: 'Check that %{container} offers the %{child_noun} %{child}.'
         container_offers_mode: 'Check that the %{noun} %{container} offers mode %{mode}.'
         enum_default: 'Select possible value **%{name}** and check the default value defined in %{value_default}.'
-        float_range_boundaries: 'Test default value %{value_default} and the boundaries of value range [%{range}]; define points using %{unit}, %{resolution}, inclusivity %{inclusivity}, and tolerance %{tolerance}.'
+        float_range_boundaries: 'For value range **%{value}** [%{range}] in %{unit}, test the default %{value_default}; the exact endpoints %{minimum} and %{maximum}; interior points %{minimum} + %{tolerance} and %{maximum} - %{tolerance}; and exterior points %{minimum} - %{tolerance} and %{maximum} + %{tolerance}. The endpoints are accepted or rejected according to inclusivity %{inclusivity}; interior points must be accepted and exterior points rejected. Choose representable points according to resolution %{resolution}, and record comparisons using tolerance %{tolerance}.'
         mode_enables_parameter: 'Select %{mode} and check that parameter %{parameter} is available.'
         mode_enables_value: 'Select %{mode} and check that %{value} is an available alternative for %{parameter}.'
         model_command_accepted: 'Check that command %{command} is available to invoke.'
@@ -168,3 +178,15 @@ en:
         system_offers_parameter: 'Check that %{system} offers parameter %{parameter}.'
         text_constraints: 'Test the default text value and boundary cases defined by %{constraints}.'
         value_admitted_by_modes: 'Activate one of modes %{modes} and check that %{value} is offered for %{parameter}.'
+    datums:
+      title: Generate shared csDatum
+      target_project: Destination project
+      submit: Create missing csDatum
+      cancel: Back to PORIS project
+      source: PORIS property
+      existing: Already defined
+      missing: To create
+      created_notice: 'Created %{created} csDatum; preserved %{existing} existing definitions in %{project}.'
+      generated_description: 'Generated from PORIS item %{source}, property %{property}.'
+      csid_conflict: 'These csIDs already belong to non-csDatum items and cannot be generated: %{keys}.'
+      no_targets: No project in this project tree is available as a csDatum destination for your account.

@@ -24,6 +24,41 @@
   <% end %>
 </div>
 
+<% if @project_preview %>
+  <section class="poris-project-previews">
+    <h3><%= l(:label_cosmosys_poris_project_preview) %></h3>
+    <p>
+      <%= link_to l(:label_cosmosys_poris_generate_datums), project_poris_datum_preflight_path(@project), class: 'button' %>
+    </p>
+    <div class="splitcontent">
+      <section class="splitcontentleft">
+        <h4><%= l(:label_cosmosys_poris_requirements_preview) %></h4>
+        <div class="wiki"><%= textilizable(@project_preview.requirements_markdown, object: @project, project: @project) %></div>
+        <% if @requirements_plugin_installed %>
+          <button type="button" class="button poris-generation-ack" data-message="<%= l(:text_cosmosys_poris_preview_ack) %>"><%= l(:label_cosmosys_poris_generate_requirements) %></button>
+        <% end %>
+      </section>
+      <section class="splitcontentright">
+        <h4><%= l(:label_cosmosys_poris_validation_preview) %></h4>
+        <div class="wiki"><%= textilizable(@project_preview.validation_markdown, object: @project, project: @project) %></div>
+        <% if @validation_plugin_installed %>
+          <button type="button" class="button poris-generation-ack" data-message="<%= l(:text_cosmosys_poris_preview_ack) %>"><%= l(:label_cosmosys_poris_generate_validation) %></button>
+        <% end %>
+      </section>
+    </div>
+    <p class="help"><%= l(:text_cosmosys_poris_preview_not_saved) %></p>
+    <p class="poris-generation-ack-message" role="status" aria-live="polite"></p>
+  </section>
+  <script>
+    document.querySelectorAll('.poris-generation-ack').forEach((button) => {
+      button.addEventListener('click', () => {
+        const status = document.querySelector('.poris-generation-ack-message');
+        if (status) status.textContent = button.dataset.message;
+      });
+    });
+  </script>
+<% end %>
+
 <script type="module">
   import { createPorisViewerPanel } from '<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>';
   createPorisViewerPanel('<%= j @model_url %>', '#porisViewer');

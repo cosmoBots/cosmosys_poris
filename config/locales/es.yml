@@ -19,6 +19,11 @@ es:
   label_cosmosys_poris_scope_node: Nodo
   label_cosmosys_poris_scope_project: Proyecto
   label_cosmosys_poris_scope_node_down: Nodo y descendientes
+  label_cosmosys_poris_project_preview: Vistas previas de requisitos y validación del proyecto
+  label_cosmosys_poris_generate_requirements: Generar/sincronizar proyecto de requisitos
+  label_cosmosys_poris_generate_validation: Generar/sincronizar plan de validación
+  label_cosmosys_poris_generate_datums: Generar csDatum compartidos
+  text_cosmosys_poris_preview_ack: Acción recibida; la generación y sincronización de proyectos todavía no están implementadas.
   field_pr_src_label: Etiqueta de origen PORIS
   field_pr_value_kind: Tipo de valor
   field_pr_min: Mínimo
@@ -67,6 +72,11 @@ es:
       description:
         system: "## Descripción de %{name}\n\n%{name} contiene %{contents}."
       empty_preview: "## Vista previa\n\nEste nodo no genera fragmentos con las reglas actuales."
+      project_preview:
+        requirements: '## Vista previa de requisitos del proyecto'
+        root: '### Raíz PORIS: %{name}'
+        parameter_scope: '### Detalle del parámetro: %{name}'
+        validation: '## Vista previa de validación del proyecto'
       enum_table:
         header: '| Valor posible | Significado | Valor predeterminado |'
       heading:
@@ -143,19 +153,19 @@ es:
         divider: "\n\n---\n\n"
       shared_datums:
         empty: "## csDatum compartidos\n\nNo se requieren datos pendientes para este alcance.\n\n---\n"
-        entry: '- `${%{key}.value}` — %{description}; valor: **TBD**.'
+        entry: '- `${%{key}.value}` — %{description}; valor: **${%{key}.value}**.'
         list: "## csDatum compartidos\n\n%{entries}\n\n---\n"
       topic:
         parameter_required_modes: Modos necesarios del parámetro %{parameter}
       validation:
-        active_float_range: 'Seleccionar el modo que habilita %{value} en %{parameter} y comprobar el intervalo %{range}, su resolución %{resolution} y la recuperación al valor predeterminado %{value_default} cuando el valor falte o quede fuera del intervalo.'
+        active_float_range: 'Seleccionar el modo que habilita %{value} en %{parameter}. Dejar el valor sin definir y comprobar que toma el valor predeterminado (%{value_default}). Probar después %{minimum} - %{tolerance} y %{maximum} + %{tolerance} como entradas fuera de rango: ambas deben rechazarse y restaurar el valor predeterminado. Probar %{minimum} + %{tolerance} y %{maximum} - %{tolerance} como entradas dentro del rango, respetando la resolución %{resolution}; la aceptación exacta de los límites %{minimum} y %{maximum} depende de la inclusividad %{inclusivity}.'
         command_accepted: 'Comprobar que el %{noun} %{container} acepta el comando %{command}.'
         command_effect: 'Invocar el comando %{command} de %{container} y comprobar el efecto definido en %{effect}.'
         container_mode_selects_child_mode: 'Activar el modo %{mode} y comprobar que el %{noun} %{child} queda en el modo %{child_mode}.'
         container_offers_child: 'Comprobar que %{container} ofrece el %{child_noun} %{child}.'
         container_offers_mode: 'Comprobar que el %{noun} %{container} ofrece el modo %{mode}.'
         enum_default: 'Seleccionar el valor posible **%{name}** y comprobar el valor predeterminado definido en %{value_default}.'
-        float_range_boundaries: 'Probar el valor predeterminado %{value_default} y las fronteras del rango de valores [%{range}]; definir puntos con %{unit}, %{resolution}, inclusividad %{inclusivity} y tolerancia %{tolerance}.'
+        float_range_boundaries: 'Para el rango de valores **%{value}** [%{range}] en %{unit}, probar el valor predeterminado %{value_default}; los extremos exactos %{minimum} y %{maximum}; puntos interiores %{minimum} + %{tolerance} y %{maximum} - %{tolerance}; y puntos exteriores %{minimum} - %{tolerance} y %{maximum} + %{tolerance}. Los extremos se aceptan o rechazan según la inclusividad %{inclusivity}; los puntos interiores deben aceptarse y los exteriores rechazarse. Elegir puntos representables según la resolución %{resolution} y registrar las comparaciones usando la tolerancia %{tolerance}.'
         mode_enables_parameter: 'Seleccionar %{mode} y comprobar que el parámetro %{parameter} está disponible.'
         mode_enables_value: 'Seleccionar %{mode} y comprobar que %{value} es una alternativa disponible para %{parameter}.'
         model_command_accepted: 'Comprobar que el comando %{command} está disponible para su invocación.'
@@ -168,3 +178,15 @@ es:
         system_offers_parameter: 'Comprobar que %{system} ofrece el parámetro %{parameter}.'
         text_constraints: 'Probar el valor textual predeterminado y los casos límite definidos en %{constraints}.'
         value_admitted_by_modes: 'Activar uno de los modos %{modes} y comprobar que %{value} se ofrece para %{parameter}.'
+    datums:
+      title: Generar csDatum compartidos
+      target_project: Proyecto de destino
+      submit: Crear los csDatum que faltan
+      cancel: Volver al proyecto PORIS
+      source: Propiedad PORIS
+      existing: Ya definido
+      missing: Por crear
+      created_notice: 'Se han creado %{created} csDatum y se han conservado %{existing} definiciones existentes en %{project}.'
+      generated_description: 'Generado desde el elemento PORIS %{source}, propiedad %{property}.'
+      csid_conflict: 'Estos csID ya pertenecen a elementos que no son csDatum y no se pueden generar: %{keys}.'
+      no_targets: No hay ningún proyecto de este árbol disponible como destino de csDatum para tu cuenta.

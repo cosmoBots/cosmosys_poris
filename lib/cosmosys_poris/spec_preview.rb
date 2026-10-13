@@ -1,13 +1,18 @@
 module CosmosysPoris
   class SpecPreview
-    Result = Struct.new(:requirements_markdown, :validation_markdown, keyword_init: true)
+    Result = Struct.new(
+      :requirements_markdown, :validation_markdown,
+      :requirements_body, :validation_body, :datums,
+      keyword_init: true
+    )
 
     PORIS_KINDS = %w[poris_sys poris_param poris_mode poris_value poris_cmd].freeze
     CONTAINER_KINDS = %w[poris_sys poris_param].freeze
 
-    def initialize(issue, user: User.current)
+    def initialize(issue, user: User.current, locale_project: nil)
       @issue = issue
       @user = user
+      @locale_project = locale_project || issue&.project
       @datums = {}
       @requirements = []
       @requirement_description = []
@@ -20,15 +25,20 @@ module CosmosysPoris
     end
 
     def render
-      return Result.new(requirements_markdown: '', validation_markdown: '') unless issue&.cosmosys_poris?
+      return Result.new(requirements_markdown: '', validation_markdown: '', requirements_body: '', validation_body: '', datums: []) unless issue&.cosmosys_poris?
 
-      issue.project.with_cosmosys_locale do
+      @locale_project.with_cosmosys_locale do
         @requirement_chapter = tr('chapter.requirements')
         load_model
         generate_fragments
+        requirements_body = notes_markdown + requirements_markdown
+        validation_body = notes_markdown + @validations.join("\n\n")
         Result.new(
-          requirements_markdown: document(datums_markdown + notes_markdown + requirements_markdown),
-          validation_markdown: document(datums_markdown + notes_markdown + @validations.join("\n\n"))
+          requirements_markdown: document(datums_markdown + requirements_body),
+          validation_markdown: document(datums_markdown + validation_body),
+          requirements_body: requirements_body,
+          validation_body: validation_body,
+          datums: @datums.values
         )
       end
     end
@@ -346,6 +356,7 @@ module CosmosysPoris
       missing_datum(value, 'unit', tr('datum.range_unit'))
       missing_datum(value, 'resolution', tr('datum.range_resolution'))
       missing_datum(value, 'bounds_inclusivity', tr('datum.bounds_inclusivity'))
+      missing_datum(value, 'tolerance', tr('datum.range_tolerance'))
       missing_datum(value, 'minimum', tr('datum.range_minimum')) if value.pr_min.nil?
       missing_datum(value, 'maximum', tr('datum.range_maximum')) if value.pr_max.nil?
       missing_datum(value, 'default', tr('datum.range_default')) if value.pr_default.nil?
@@ -356,7 +367,14 @@ module CosmosysPoris
       range = "[#{minimum}…#{maximum}]"
       add_requirement(tr('requirement.active_float_range', context: mode_context, range: range, unit: datum_reference(value, 'unit'), resolution: datum_reference(value, 'resolution')))
       add_requirement(tr('requirement.active_float_default', context: mode_context, range: range, value_default: default))
-      add_validation(tr('validation.active_float_range', value: name(value), parameter: name(parameter), range: range, resolution: datum_reference(value, 'resolution'), value_default: default))
+      add_validation(tr(
+        'validation.active_float_range',
+        value: name(value), parameter: name(parameter), range: range,
+        minimum: minimum, maximum: maximum,
+        resolution: datum_reference(value, 'resolution'),
+        inclusivity: datum_reference(value, 'bounds_inclusivity'),
+        tolerance: datum_reference(value, 'tolerance'), value_default: default
+      ))
     end
 
     def add_value_uncertainties(item)
@@ -376,7 +394,13 @@ module CosmosysPoris
         default = item.pr_default || datum_reference(item, 'default')
         range = [minimum, maximum].join('…')
         add_requirement(tr('requirement.float_range_definition', name: name(item), range: range, unit: datum_reference(item, 'unit'), resolution: datum_reference(item, 'resolution'), value_default: default))
-        add_validation(tr('validation.float_range_boundaries', value_default: default, range: range, unit: datum_reference(item, 'unit'), resolution: datum_reference(item, 'resolution'), inclusivity: datum_reference(item, 'bounds_inclusivity'), tolerance: datum_reference(item, 'tolerance')))
+        add_validation(tr(
+          'validation.float_range_boundaries',
+          value: name(item), value_default: default, range: range,
+          minimum: minimum, maximum: maximum,
+          unit: datum_reference(item, 'unit'), resolution: datum_reference(item, 'resolution'),
+          inclusivity: datum_reference(item, 'bounds_inclusivity'), tolerance: datum_reference(item, 'tolerance')
+        ))
       when 'text'
         missing_datum(item, 'meaning', tr('datum.text_meaning'))
         add_note(tr('note.text_meaning', name: name(item), datum: datum_reference(item, 'meaning')), chapter: name(item))
@@ -415,7 +439,13 @@ module CosmosysPoris
 
     def missing_datum(item, property, description)
       key = datum_key(item, property)
-      @datums[key] ||= { key: key, description: datum_description(item, property, description) }
+      @datums[key] ||= {
+        key: key,
+        description: datum_description(item, property, description),
+        source_csid: item.csid,
+        source_subject: item.subject,
+        property: property
+      }
     end
 
     def datum_description(item, property, description)
@@ -453,7 +483,9 @@ module CosmosysPoris
     end
 
     def datum_key(item, property)
-      "poris.#{item.csid.presence || item.id}.#{property}"
+      source_key = item.csid.presence || "POR_#{item.id}"
+      normalized_source = source_key.gsub(/[^A-Za-z0-9]+/, '_').gsub(/\A_+|_+\z/, '')
+      "#{normalized_source}_#{property}"
     end
 
     def datum_reference(item, property)
