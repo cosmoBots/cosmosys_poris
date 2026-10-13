@@ -31,6 +31,7 @@ require_dependency File.expand_path('lib/cosmosys_poris/profile_registration', _
 require_dependency File.expand_path('lib/cosmosys_poris/issue_patch', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/ods_fields', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/issue_relation_patch', __dir__)
+require_dependency File.expand_path('lib/cosmosys_poris/option_relations', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/model_xml_exporter', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/spec_preview', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/project_spec_preview', __dir__)

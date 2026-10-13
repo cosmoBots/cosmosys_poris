@@ -22,6 +22,11 @@ module CosmosysPoris
       candidate_items = visible_candidate_items
       @items = select_scoped_items(candidate_items).index_by(&:id)
       @children = @items.values.group_by(&:parent_issue_id)
+      mode_ids = @items.values.select { |item| item.cosmosys_item_kind_key == 'poris_mode' }.map(&:id)
+      @option_relations_by_mode = OptionRelations.grouped_by_mode(mode_ids)
+      @option_target_ids = @option_relations_by_mode.transform_values do |relations|
+        relations.map(&:issue_to_id)
+      end
 
       output = ['<poris id="systems">']
       roots = model_roots
@@ -41,7 +46,6 @@ module CosmosysPoris
                         .to_a
                         .select(&:cosmosys_poris?)
       ordered = order_by_tree_position(candidates)
-      @tree_order_index = ordered.each_with_index.to_h { |item, index| [item.id, index] }
       ordered
     end
 
@@ -108,11 +112,10 @@ module CosmosysPoris
       @candidate_items_by_id = candidates.index_by(&:id)
       @candidate_children = candidates.group_by(&:parent_issue_id)
       mode_ids = candidates.select { |item| item.cosmosys_item_kind_key == 'poris_mode' }.map(&:id)
-      @block_targets = IssueRelation.where(issue_from_id: mode_ids, relation_type: 'blocks')
-                                    .order(:id)
-                                    .pluck(:issue_from_id, :issue_to_id)
-                                    .group_by(&:first)
-                                    .transform_values { |relations| relations.map(&:last) }
+      @option_relations_by_mode = OptionRelations.grouped_by_mode(mode_ids)
+      @option_target_ids = @option_relations_by_mode.transform_values do |relations|
+        relations.map(&:issue_to_id)
+      end
       @focused_items = {}
       @focused_container_destinations = {}
       @focused_container_modes = {}
@@ -165,7 +168,7 @@ module CosmosysPoris
       add_focused_container_commands(container)
 
       activating_modes = Array(@candidate_children[container.id]).select do |child|
-        child.cosmosys_item_kind_key == 'poris_mode' && Array(@block_targets[child.id]).include?(value.id)
+        child.cosmosys_item_kind_key == 'poris_mode' && Array(@option_target_ids[child.id]).include?(value.id)
       end
       @focused_container_modes[container.id] = activating_modes.map(&:id)
       @focused_container_destinations[container.id] = activating_modes.map(&:id)
@@ -176,9 +179,8 @@ module CosmosysPoris
     end
 
     def focused_block_targets(mode)
-      Array(@block_targets[mode.id]).filter_map { |id| @candidate_items_by_id[id] }
+      Array(@option_target_ids[mode.id]).filter_map { |id| @candidate_items_by_id[id] }
         .select { |target| %w[poris_mode poris_value].include?(target.cosmosys_item_kind_key) }
-        .sort_by { |target| tree_order_key(target) }
     end
 
     def add_focused_container_commands(container)
@@ -326,19 +328,16 @@ module CosmosysPoris
       when 'poris_sys', 'poris_param'
         Array(@children[issue.id]).select { |child| NODE_TYPES.key?(child.cosmosys_item_kind_key) && child.cosmosys_item_kind_key != 'poris_cmd' }
       when 'poris_mode'
-        relation_ids = IssueRelation.where(issue_from_id: issue.id, relation_type: 'blocks').order(:id).pluck(:issue_to_id)
-        relation_ids.filter_map { |id| @items[id] }
-                    .select { |target| %w[poris_mode poris_value].include?(target.cosmosys_item_kind_key) }
-                    .sort_by { |target| tree_order_key(target) }
+        Array(@option_relations_by_mode[issue.id]).filter_map do |relation|
+          @items[relation.issue_to_id]
+        end
       else
         []
       end
     end
 
-    # Use the same sibling order as the cosmoSys tree (`csposition`, then the
-    # nested-set position and ID as stable tie-breakers). PORIS form controls
-    # consume these destinations in order, so modes and child containers are
-    # offered consistently with the tree view and its diagrams.
+    # Use the same sibling order as the cosmoSys tree for containment lists.
+    # Mode destinations are ordered separately by PORIS relation priority.
     def order_by_tree_position(items)
       by_parent = items.group_by(&:parent_issue_id)
       item_ids = items.to_h { |item| [item.id, true] }
@@ -359,10 +358,6 @@ module CosmosysPoris
            .each { |root| visit.call(root) }
       items.sort_by(&sibling_key).each { |item| visit.call(item) }
       ordered
-    end
-
-    def tree_order_key(item)
-      [@tree_order_index&.fetch(item.id, nil) || Float::INFINITY, item.id]
     end
 
     def node_definition(issue)

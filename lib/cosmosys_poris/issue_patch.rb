@@ -16,6 +16,7 @@ module CosmosysPoris
                  dependent: :destroy,
                  inverse_of: :issue
         before_validation :cosmosys_poris_apply_defaults, on: :create
+        before_validation :cosmosys_poris_clear_schedule_dates
         validate :cosmosys_poris_validate_fields
       end
     end
@@ -184,6 +185,13 @@ module CosmosysPoris
 
     def cosmosys_poris_apply_defaults
       self.pr_value_kind ||= 'enum' if cosmosys_poris_value?
+    end
+
+    def cosmosys_poris_clear_schedule_dates
+      return unless cosmosys_poris?
+
+      self.start_date = nil
+      self.due_date = nil
     end
 
     def cosmosys_poris_validate_fields

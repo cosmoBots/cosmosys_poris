@@ -10,13 +10,13 @@ Plugin Redmine que integra modelos PORIS con
 
 El perfil `poris` usa trackers PORIS con perfiles de ítem propios. Los
 contenedores (`prSys`, `prParam`) usan la jerarquía de cosmoSys; los modos
-(`prMode`) expresan alternativas mediante relaciones `blocks` hacia otros modos
+(`prMode`) expresan alternativas mediante relaciones `precedes` hacia otros modos
 o valores. `prValue` usa un solo tracker y `pr_value_kind` diferencia valores
 enumerados (opción discreta), numéricos y de texto. Las etiquetas por ámbito se guardan como asociaciones, no
 como campos personalizados.
 
-Contrato PORIS acordado, aún pendiente de implementación completa: sólo la raíz
-real del modelo ofrece `Unknown` al usuario; los descendientes conservan el modo
+El contrato PORIS sólo ofrece `Unknown` al usuario en la raíz real del modelo;
+los descendientes conservan el modo
 activo si sigue siendo elegible, eligen la primera alternativa elegible si no,
 y pasan a `Unknown` si no hay alternativas. Para valores discretos se aplica la
 misma regla de conservación/primera alternativa/sin selección; para rangos
@@ -25,10 +25,13 @@ activo. `Unknown` es el modo predeterminado de arranque y representa
 inactividad lógica, no un mecanismo físico. La referencia normativa está en
 `docs/poris_unknown_mode_semantics.md` del workspace csys.
 
-Actualmente las relaciones `blocks` habilitan modos y valores. El contrato
-acordado prevé migrarlas a relaciones `precedes` PORIS con `delay` reinterpretado
-como prioridad (valor más alto primero); la migración y la adaptación de
-snapshots/ODS están pendientes.
+Las relaciones `precedes` habilitan modos y valores PORIS; su `delay` es una
+prioridad, no días de retraso: el valor más alto se ofrece primero y los
+empates se resuelven por `csposition`, posición del árbol e ID. La migración
+`002` convierte las relaciones PORIS `blocks` existentes a `precedes` con
+prioridad cero y elimina sus fechas de planificación. Los snapshots preservan
+el `delay`; el formato ODS actual aún no conserva prioridades y debe ampliarse
+antes de usarlo para round-trip de relaciones PORIS con prioridad no nula.
 
 ## Requisitos e instalación
 
@@ -81,7 +84,7 @@ flotantes se describen como rangos de valores, con intervalo, unidad, resolució
 y default. Las claves `csDatum` nombran la propiedad sin repetir el tipo ya
 determinado por el nodo (`tolerance`, `constraints`, `meaning`). Para modos,
 valores y comandos se incorpora el contexto PORIS inmediato. Las relaciones
-`blocks` acotan los destinos descritos.
+`precedes` acotan los destinos descritos y su prioridad ordena las alternativas.
 En la ficha, los paneles se ordenan como combinado, dependencias y jerárquico;
 las vistas previas de requisitos y validación aparecen después de esos
 diagramas. En alcance `node`, el formulario de un `prSys` omite los `prValue`

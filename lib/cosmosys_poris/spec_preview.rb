@@ -65,11 +65,12 @@ module CosmosysPoris
       @items << issue unless @items.any? { |item| item.id == issue.id }
       @items_by_id = @items.index_by(&:id)
       @children = @items.group_by(&:parent_issue_id)
-      @block_targets = IssueRelation.where(relation_type: 'blocks', issue_from_id: @items.map(&:id))
-                                    .pluck(:issue_from_id, :issue_to_id)
-                                    .each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(from_id, to_id), result|
-        target = @items_by_id[to_id]
-        result[from_id] << target if target
+      mode_ids = @items.select { |item| item.cosmosys_item_kind_key == 'poris_mode' }.map(&:id)
+      @option_targets = OptionRelations.grouped_by_mode(mode_ids).transform_values do |relations|
+        relations.filter_map do |relation|
+          target = @items_by_id[relation.issue_to_id]
+          target if target
+        end
       end
     end
 
@@ -169,11 +170,11 @@ module CosmosysPoris
     def traverse_validation_mode(mode, selected_modes)
       container = @items_by_id[mode.parent_issue_id]
       candidates = validation_frontier_candidates(container, mode)
-      targets = Array(@block_targets[mode.id]).to_h { |target| [target.id, target] }
+      targets = Array(@option_targets[mode.id]).to_h { |target| [target.id, target] }
 
-      # PORIS `blocks` relations point at the options enabled by the active
+      # PORIS `precedes` relations point at the options enabled by the active
       # mode. Every other option on this immediate frontier is a closed door.
-      enabled_candidates = candidates.select { |candidate| targets.key?(candidate.id) }
+      enabled_candidates = Array(@option_targets[mode.id]).select { |candidate| targets.key?(candidate.id) }
       closed_candidates = candidates - enabled_candidates
 
       closed_candidates.each do |blocked|
@@ -209,14 +210,14 @@ module CosmosysPoris
         CONTAINER_KINDS.include?(child.cosmosys_item_kind_key)
       end
       modes = child_containers.flat_map { |child| direct_children(child, 'poris_mode') }
-      direct_value_targets = Array(@block_targets[mode.id]).select do |target|
+      direct_value_targets = Array(@option_targets[mode.id]).select do |target|
         target.cosmosys_item_kind_key == 'poris_value' &&
           child_containers.any? { |child| child.id == target.parent_issue_id }
       end
       value_parameters = direct_value_targets.map(&:parent_issue_id).uniq
       values = child_containers.select { |child| value_parameters.include?(child.id) }
                                .flat_map { |child| direct_children(child, 'poris_value') }
-      (modes + values).uniq(&:id).sort_by { |item| [item.csid.to_s, item.id] }
+      (modes + values).uniq(&:id).sort_by { |item| [item.csposition.to_i, item.lft.to_i, item.id] }
     end
 
     def add_blocked_choice_validation(blocked, selected_modes)
@@ -310,7 +311,7 @@ module CosmosysPoris
 
     def direct_children(parent, kind)
       Array(@children[parent.id]).select { |child| child.cosmosys_item_kind_key == kind }
-                                  .sort_by { |child| [child.csid.to_s, child.id] }
+                                  .sort_by { |child| [child.csposition.to_i, child.lft.to_i, child.id] }
     end
 
     def selected_mode_context(modes)
@@ -516,7 +517,7 @@ module CosmosysPoris
 
     def describe_mode(item, target_kinds: nil, offer_requirement: true)
       container = @items_by_id[item.parent_issue_id]
-      targets = Array(@block_targets[item.id])
+      targets = Array(@option_targets[item.id])
       targets = targets.select { |target| target_kinds.include?(target.cosmosys_item_kind_key) } if target_kinds
       describe_mode_header(item, container: container, offer_requirement: offer_requirement)
       targets.each do |target|
@@ -593,7 +594,7 @@ module CosmosysPoris
     def describe_value(item, include_availability: true)
       parameter = @items_by_id[item.parent_issue_id]
       related_modes = @items.select do |candidate|
-        candidate.cosmosys_item_kind_key == 'poris_mode' && Array(@block_targets[candidate.id]).any? { |target| target.id == item.id }
+        candidate.cosmosys_item_kind_key == 'poris_mode' && Array(@option_targets[candidate.id]).any? { |target| target.id == item.id }
       end
       if parameter
         if include_availability
@@ -942,7 +943,7 @@ module CosmosysPoris
     end
 
     def modes_consumed_by(system_modes, parameter)
-      targets = system_modes.flat_map { |system_mode| Array(@block_targets[system_mode.id]) }
+      targets = system_modes.flat_map { |system_mode| Array(@option_targets[system_mode.id]) }
       targets.select do |target|
         target.cosmosys_item_kind_key == 'poris_mode' && target.parent_issue_id == parameter.id
       end.uniq { |mode| mode.id }.sort_by { |mode| [mode.csid.to_s, mode.id] }

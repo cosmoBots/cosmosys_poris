@@ -1,7 +1,7 @@
 en:
   label_cosmosys_poris_project_profile: PORIS model
   text_cosmosys_poris_project_profile: Project profile for PORIS systems, parameters, modes, values and commands.
-  text_cosmosys_poris_item_profile: PORIS model element. Parent/child containment is distinct from blocking relations between modes and values.
+  text_cosmosys_poris_item_profile: PORIS model element. Parent/child containment is distinct from enablement relations between modes and values.
   label_cosmosys_poris_sys: PORIS system
   label_cosmosys_poris_param: PORIS parameter
   label_cosmosys_poris_mode: PORIS mode
