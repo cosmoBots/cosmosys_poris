@@ -8,6 +8,8 @@ module CosmosysPoris
       @model_url = project_poris_model_path(@project, format: :xml, scope: @scope, issue_id: @issue&.id)
       return unless @scope == 'project'
 
+      @project_tab = %w[configuration requirements validation constructor automated_validation].include?(params[:tab]) ? params[:tab] : 'configuration'
+
       unless @issue
         @runtime_state = hydrated_runtime_state
         @runtime_commit_url = commit_project_poris_state_path(@project)
@@ -26,6 +28,7 @@ module CosmosysPoris
       return if @issue
 
       @project_preview = ProjectSpecPreview.new(@project, user: User.current).render
+      @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render if %w[constructor automated_validation].include?(@project_tab)
       @requirements_plugin_installed = Redmine::Plugin.installed?(:cosmosys_req)
       @validation_plugin_installed = Redmine::Plugin.installed?(:cosmosys_val)
     end
@@ -74,6 +77,70 @@ module CosmosysPoris
       save_runtime_session_state(result.fetch('state'))
       response.headers['Cache-Control'] = 'no-store'
       render json: result
+    rescue ActionController::ParameterMissing, ArgumentError, TypeError => error
+      render json: { error: error.message }, status: :unprocessable_entity
+    end
+
+    def run_validation
+      raise ActiveRecord::RecordNotFound unless @scope == 'project' && @issue.nil?
+
+      generator = RubyCodePreview.new(@project, user: User.current)
+      preview = generator.render
+      steps = preview.validation_steps
+      step_index = Integer(params.require(:step_index))
+      raise ActionController::BadRequest, 'Validation step index is out of range' unless step_index.between?(0, steps.length - 1)
+
+      progress = session[:cosmosys_poris_validation_progress] ||= {}
+      project_key = @project.id.to_s
+      expected_index = progress[project_key].to_i
+      if step_index.zero?
+        progress[project_key] = 0
+      elsif step_index != expected_index
+        return render json: { error: 'Validation steps must run in order' }, status: :conflict
+      end
+
+      runtime = RuntimeModel.new(@project, user: User.current)
+      saved_state = runtime_session_state
+      runtime.restore(saved_state) if saved_state.any?
+      step = steps.fetch(step_index)
+      result = runtime.apply([step[:stimulus]])
+      operations = result.fetch('operations')
+      state_after = result.fetch('state')
+      query_result = generator.evaluate_query(step[:query], state_after)
+      status = if query_result.nil?
+                 'unverified'
+               elsif query_result
+                 'passed'
+               else
+                 'failed'
+               end
+      passed = status == 'passed'
+      result_row = { index: step_index, id: step[:id], title: step[:title], status: status }
+      complete = !passed || step_index == steps.length - 1
+      if passed
+        progress[project_key] = step_index + 1
+      else
+        progress.delete(project_key)
+      end
+      skipped = passed ? [] : steps.drop(step_index + 1).each_with_index.map do |remaining, offset|
+        { index: step_index + offset + 1, id: remaining[:id], title: remaining[:title], status: 'skipped' }
+      end
+
+      save_runtime_session_state(runtime.state)
+      response.headers['Cache-Control'] = 'no-store'
+      render json: {
+        result: result_row,
+        skipped: skipped,
+        complete: complete,
+        total_steps: steps.length,
+        actual: operations.map { |operation| operation['accepted'] ? 'accepted' : operation['reason'] }.join('; '),
+        query_result: query_result,
+        query_reason: step.dig(:query, 'reason'),
+        query_description: step[:query_description],
+        query_expected: step[:query_expected],
+        operations: operations,
+        state: runtime.state
+      }
     rescue ActionController::ParameterMissing, ArgumentError, TypeError => error
       render json: { error: error.message }, status: :unprocessable_entity
     end

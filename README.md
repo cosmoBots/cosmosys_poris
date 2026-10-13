@@ -117,8 +117,10 @@ la ficha y todavía son experimentales. Las claves son compatibles con el
 diccionario cosmoSys: `POR-0008.purpose` se representa como
 `POR_0008_purpose` y la referencia es `${POR_0008_purpose.value}`.
 
-En la vista PORIS del proyecto se agregan los previews de requisitos y
-validación para las raíces PORIS del proyecto y sus descendientes. Si
+La vista de proyecto PORIS se organiza en pestañas: configuración (viewer,
+runtime de sesión y diagrama), requisitos, plan de validación, constructor Ruby
+y comandos de validación automatizada. Los previews de requisitos y validación
+agregan las raíces PORIS del proyecto y sus descendientes. Si
 `cosmosys_req` o `cosmosys_val` están instalados, aparecen botones de
 generación/sincronización con un ACK; esas operaciones aún no crean los
 proyectos correspondientes. El botón de `csDatum` sí abre un preflight y crea
@@ -128,7 +130,8 @@ Los valores existentes se conservan y los nuevos empiezan como `TBD`.
 La validación agrupa sus pasos en casos de prueba por alcance PORIS; cada caso
 usa referencias `csDatum` TBD para `tpPreconditions` y `tpPostconditions`, y
 cada paso muestra por separado título, estímulos y resultado esperado, con la
-estructura de `tpStep` de `cosmosys_val`. Los rangos flotantes generan pasos
+estructura de `tpStep` de `cosmosys_val`. Los estímulos son acciones/comandos;
+los resultados esperados son consultas al estado resultante. Los rangos flotantes generan pasos
 individuales para el valor predeterminado, ambos límites, puntos interiores
 (`mínimo + tolerancia`, `máximo - tolerancia`) y exteriores (`mínimo -
 tolerancia`, `máximo + tolerancia`). Cada estímulo del plan es una solicitud al
@@ -148,6 +151,26 @@ Las plantillas Markdown están en los ficheros de locale inglés y español y se
 resuelven con el idioma configurado en el proyecto, no con el idioma de
 interfaz del usuario. Admiten interpolaciones nombradas de I18n para los
 nombres PORIS, referencias, límites y demás contenido generado.
+
+La pestaña de código produce una vista del constructor Ruby con accesos
+`sys<Name>`, `pr<Name>`, `md<Param>Mode_<Mode>` y `vl<Param>_<Value>`.
+Las llamadas generadas pasan las referencias a modos y valores mediante esos
+accesores, no mediante sus nombres como cadenas.
+`Run`, en la pestaña de comandos de validación, ejecuta secuencialmente cada
+estímulo contra el runtime PORIS de la sesión, a razón de dos pasos por segundo;
+consulta el resultado esperado tras cada acción y muestra el resultado en una
+columna a la derecha. Tanto el código Ruby generado como `Run` consumen el
+mismo plan estructurado de estímulos y consultas. Si no existe una consulta
+observable para el efecto de un comando, `Run` lo marca como no verificable y
+detiene el recorrido, en vez de contarlo como aprobado. El plan se muestra en
+una sola tabla: código de cada paso, log de ejecución y check. El runtime se
+presenta en un sidebar y se actualiza en cada paso. El recorrido se detiene ante el
+primer fallo y marca el resto de pasos como no ejecutados. El estado final se
+conserva en la sesión y aparece al volver a Configuración. Esta ejecución
+comprueba el contrato del runtime Ruby ligero del plugin; no invoca
+hardware ni persiste estado en la base de datos. El constructor
+marca como pendiente el registro de comandos porque el núcleo `rbPORIS` de
+referencia aún no define `PORISCmd`.
 
 Los propósitos no definidos se presentan como notas informativas con una
 referencia de valor compatible con el diccionario, por ejemplo

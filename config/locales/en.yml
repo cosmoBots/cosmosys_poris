@@ -20,6 +20,21 @@ en:
   label_cosmosys_poris_scope_project: Project
   label_cosmosys_poris_scope_node_down: Node & descendants
   label_cosmosys_poris_project_preview: Generated requirements and validation previews
+  label_cosmosys_poris_tab_configuration: Configuration
+  label_cosmosys_poris_tab_requirements: Requirements
+  label_cosmosys_poris_tab_validation: Validation plan
+  label_cosmosys_poris_tab_constructor: Ruby constructor
+  label_cosmosys_poris_tab_automated_validation: Automated validation commands
+  text_cosmosys_poris_code_preview_limitations: This is a Ruby-oriented preview. Command registration is marked as a TODO because the installed Ruby PORIS core has no PORISCmd API yet.
+  label_cosmosys_poris_run_validation: Run validation plan
+  label_cosmosys_poris_run_passed: Passed
+  label_cosmosys_poris_run_failed: Failed
+  label_cosmosys_poris_run_unverified: Not verifiable
+  label_cosmosys_poris_run_skipped: Not run (previous step failed)
+  label_cosmosys_poris_validation_code: Code
+  label_cosmosys_poris_validation_log: Log
+  label_cosmosys_poris_validation_check: Check
+  text_cosmosys_poris_run_in_progress: Running the generated plan against this session's PORIS runtime…
   label_cosmosys_poris_runtime_state: PORIS runtime state (this session)
   label_cosmosys_poris_runtime_operations: Operations sent to the PORIS runtime
   text_cosmosys_poris_runtime_empty: No PORIS commit has been made in this session.

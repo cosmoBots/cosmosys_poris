@@ -1,0 +1,22 @@
+<section class="poris-runtime-state" id="porisRuntimeState"
+         data-mode-template="<%= l(:text_cosmosys_poris_runtime_mode, name: '%{name}', mode: '%{mode}') %>"
+         data-value-template="<%= l(:text_cosmosys_poris_runtime_value, name: '%{name}', value: '%{value}', data: '%{data}') %>"
+         data-value-without-data-template="<%= l(:text_cosmosys_poris_runtime_value_without_data, name: '%{name}', value: '%{value}') %>"
+         data-rejected-label="<%= l(:text_cosmosys_poris_runtime_operation_rejected) %>">
+  <h3><%= l(:label_cosmosys_poris_runtime_state) %></h3>
+  <ul class="poris-runtime-nodes" id="porisRuntimeNodes">
+    <% Array(@runtime_state).each do |row| %>
+      <li><%= l(:text_cosmosys_poris_runtime_mode, name: row['name'], mode: row['mode_name']) %></li>
+      <% if row['value_name'] %>
+        <li><%= row['data'].nil? ? l(:text_cosmosys_poris_runtime_value_without_data, name: row['name'], value: row['value_name']) : l(:text_cosmosys_poris_runtime_value, name: row['name'], value: row['value_name'], data: row['data']) %></li>
+      <% end %>
+    <% end %>
+  </ul>
+  <% if Array(@runtime_state).empty? %>
+    <p id="porisRuntimeEmpty"><%= l(:text_cosmosys_poris_runtime_empty) %></p>
+  <% end %>
+  <% if local_assigns.fetch(:show_operations, true) %>
+    <h4><%= l(:label_cosmosys_poris_runtime_operations) %></h4>
+    <ol class="poris-runtime-operations" id="porisRuntimeOperations"></ol>
+  <% end %>
+</section>

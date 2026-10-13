@@ -11,7 +11,7 @@ Redmine::Plugin.register :cosmosys_poris do
   requires_redmine_plugin :cosmosys, version_or_higher: '0.1.7'
 
   permission :view_poris_model,
-             { 'cosmosys_poris/viewer' => %i[show model commit datum_preflight generate_datums] },
+             { 'cosmosys_poris/viewer' => %i[show model commit run_validation datum_preflight generate_datums] },
              public: true,
              read: true
 
@@ -36,5 +36,6 @@ require_dependency File.expand_path('lib/cosmosys_poris/model_xml_exporter', __d
 require_dependency File.expand_path('lib/cosmosys_poris/runtime_model', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/spec_preview', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/project_spec_preview', __dir__)
+require_dependency File.expand_path('lib/cosmosys_poris/ruby_code_preview', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/project_datum_generator', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/hooks', __dir__)

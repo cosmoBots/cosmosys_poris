@@ -7,6 +7,9 @@ get 'projects/:project_id/poris/model',
 post 'projects/:project_id/poris/commit',
      to: 'cosmosys_poris/viewer#commit',
      as: 'commit_project_poris_state'
+post 'projects/:project_id/poris/validation/run',
+     to: 'cosmosys_poris/viewer#run_validation',
+     as: 'run_project_poris_validation'
 get 'projects/:project_id/poris/datums',
     to: 'cosmosys_poris/viewer#datum_preflight',
     as: 'project_poris_datum_preflight'

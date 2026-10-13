@@ -5,6 +5,13 @@
   align-items: start;
 }
 
+.poris-project-layout-with-runtime-sidebar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18em, 26em);
+  gap: 1.5em;
+  align-items: start;
+}
+
 .cosmosys-poris-validation-preview p > span {
   color: #b42318;
 }
@@ -45,8 +52,82 @@
   height: auto;
 }
 
+.poris-project-tabs {
+  margin-bottom: 1em;
+}
+
+.poris-project-preview-tab,
+.poris-project-code-tab {
+  padding: 1em;
+  border: 1px solid #d7d7d7;
+  background: #fff;
+}
+
+.poris-project-code-tab pre {
+  max-height: 75vh;
+  overflow: auto;
+  padding: 1em;
+  border: 1px solid #ddd;
+  background: #f6f6f6;
+  white-space: pre;
+}
+
+.poris-validation-runner {
+  margin: 0.75em 0 1.25em;
+}
+
+.poris-validation-results td:last-child {
+  width: 5em;
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.poris-validation-results th:first-child,
+.poris-validation-results td:first-child {
+  width: 5.5em;
+  min-width: 5.5em;
+  white-space: nowrap;
+}
+
+.poris-validation-results td.poris-validation-id {
+  vertical-align: top;
+  font-weight: bold;
+}
+
+.poris-validation-results td:nth-child(2),
+.poris-validation-results td:nth-child(3) {
+  text-align: left;
+}
+
+.poris-validation-results code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.poris-project-runtime-sidebar {
+  min-width: 0;
+}
+
+.poris-validation-result-passed {
+  color: #188038;
+}
+
+.poris-validation-result-failed {
+  color: #c5221f;
+}
+
+.poris-validation-result-skipped {
+  color: #777;
+}
+
+.poris-validation-result-unverified {
+  color: #8a6d3b;
+}
+
 @media screen and (max-width: 1100px) {
-  .poris-project-layout-with-diagram {
+  .poris-project-layout-with-diagram,
+  .poris-project-layout-with-runtime-sidebar {
     grid-template-columns: minmax(0, 1fr);
   }
 }
