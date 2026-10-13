@@ -206,18 +206,17 @@ module CosmosysPoris
     def reconcile_container(node, root: false)
       candidates = eligible_modes(node)
       selected_id = @state.dig(node.id, 'mode_id')
+      selected_is_eligible = selected_id.to_s.match?(/\A\d+\z/) && candidates.include?(selected_id.to_i)
       if root && selected_id == unknown_id(node.id)
         # Root Unknown is the normal initial state, even though explicit modes
         # are available to the user.
         selected_id = unknown_id(node.id)
-      elsif !selected_id.to_s.start_with?('unknown:') && !candidates.include?(selected_id.to_i)
-        selected_id = nil
-      elsif selected_id.to_s.start_with?('unknown:') && !candidates.empty?
-        selected_id = nil
       elsif candidates.empty?
         selected_id = unknown_id(node.id)
+      elsif selected_is_eligible
+        selected_id = selected_id.to_s
       else
-        selected_id ||= candidates.first.to_s
+        selected_id = candidates.first.to_s
       end
       @state[node.id] ||= {}
       @state[node.id]['mode_id'] = selected_id.to_s
@@ -254,6 +253,8 @@ module CosmosysPoris
         state['data'] = number unless number.nil?
       elsif value.pr_value_kind == 'text'
         state['data'] = default_data(value) if state['data'].nil?
+      else
+        state.delete('data')
       end
     end
 
@@ -313,49 +314,50 @@ module CosmosysPoris
       node = @items[op['node_id'].to_i]
       return 'object.<invalid operation>' unless node
 
-      target = object_path(node)
+      target = "object.#{ruby_accessor(node)}"
       if op['type'] == 'set_mode'
         mode_id = op['mode_id'].to_s
         mode = @modes[mode_id.to_i] if mode_id.match?(/\A\d+\z/)
-        name = mode&.subject || 'Unknown'
-        "#{target}.setMode(#{name.inspect})"
+        mode_reference = mode ? "object.#{ruby_accessor(mode)}" : "#{target}.unknownMode"
+        "#{target}.setMode(#{mode_reference})"
       elsif op['type'] == 'set_value'
         value_id = op['value_id'].to_s
         value = @values[value_id.to_i] if value_id.match?(/\A\d+\z/)
-        name = value&.subject || value_id
+        return "#{target}.setValue(nil)" unless value
+
         data = op['data']
         if value&.pr_value_kind == 'float' && !data.nil?
-          "#{target}.setValue(#{name.inspect}, #{data.inspect})"
+          "#{target}.setValue(object.#{ruby_accessor(value)}, #{data.inspect})"
         else
-          "#{target}.setValue(#{name.inspect})"
+          "#{target}.setValue(object.#{ruby_accessor(value)})"
         end
       elsif op['type'] == 'invoke_command'
         command = @commands[op['command_id'].to_i] if op['command_id'].to_s.match?(/\A\d+\z/)
         return "#{target}.<invalid command>()" unless command && command.parent_issue_id == node.id
 
-        "#{target}.#{command.subject}()"
+        "#{target}.#{ruby_identifier(command.subject)}()"
       else
         'object.<unsupported operation>'
       end
     end
 
-    def object_path(node)
-      ancestors = []
-      cursor = node
-      while cursor
-        ancestors.unshift(cursor)
-        cursor = @items[cursor.parent_issue_id]
+    def ruby_accessor(item)
+      case item.cosmosys_item_kind_key
+      when 'poris_sys' then "sys#{ruby_identifier(item.subject)}"
+      when 'poris_param' then "pr#{ruby_identifier(item.subject)}"
+      when 'poris_mode' then "md#{ruby_identifier(@items[item.parent_issue_id]&.subject)}Mode_#{ruby_identifier(item.subject)}"
+      when 'poris_value' then "vl#{ruby_identifier(@items[item.parent_issue_id]&.subject)}_#{ruby_identifier(item.subject)}"
+      when 'poris_cmd' then "cmd#{ruby_identifier(@items[item.parent_issue_id]&.subject)}_#{ruby_identifier(item.subject)}"
+      else "node#{item.id}"
       end
-      ancestors.drop(1).reduce('object') do |path, item|
-        method = item.cosmosys_item_kind_key == 'poris_param' ? 'getParam' : 'getSubsystem'
-        "#{path}.#{method}(#{item.subject.inspect})"
-      end.then do |path|
-        if root?(node)
-          'object'
-        else
-          path
-        end
-      end
+    end
+
+    def ruby_identifier(value)
+      text = value.to_s.tr('áéíóúÁÉÍÓÚñÑ', 'aeiouAEIOUnN')
+      text = text.gsub('(', '_').gsub(')', '_').gsub(' ', '_').gsub('.', '_').gsub('+', 'p').gsub('/', '_')
+                 .gsub(/[¿?\-]/, '_').gsub(/[^A-Za-z0-9_]/, '_')
+      text = 'sequenceb' if text.downcase == 'sequence'
+      text.presence || 'PORISNode'
     end
 
     def sibling_key(item)
