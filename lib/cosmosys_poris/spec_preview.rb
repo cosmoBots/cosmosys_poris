@@ -115,8 +115,14 @@ module CosmosysPoris
     # UI. At each active mode, first request every immediate lower-level option
     # that is not enabled, then request and recurse into each enabled option.
     def generate_validation_traversal(root)
+      root_is_model_root = actual_model_root?(root)
       root_modes = direct_children(root, 'poris_mode')
+
+      add_unknown_root_validation(root) if root_is_model_root
+
       if root_modes.empty?
+        return if root_is_model_root
+
         case root.cosmosys_item_kind_key
         when 'poris_param' then generate_unmodeled_parameter_value_checks(root)
         when 'poris_sys' then generate_unmodeled_system_children(root)
@@ -133,6 +139,33 @@ module CosmosysPoris
         )
         traverse_validation_mode(mode, [mode])
       end
+    end
+
+    # Unknown is implicit in the model data, but the actual PORIS root exposes
+    # it as an explicit starting choice. Verify that choice first, then probe
+    # every immediately subordinate option as a closed door before testing the
+    # root's explicit modes.
+    def add_unknown_root_validation(root)
+      add_validation(
+        tr('validation.step.request_root_mode_title', container: name(root), mode: 'Unknown'),
+        stimuli: tr('validation.step.set_root_mode', container: name(root), mode: 'Unknown'),
+        expected: tr('validation.step.root_mode_now_expected', container: name(root), mode: 'Unknown')
+      )
+
+      root_state = { container: root, mode: 'Unknown' }
+      validation_frontier_candidates(root, nil).each do |blocked|
+        add_blocked_choice_validation(blocked, [], root_state: root_state)
+      end
+    end
+
+    def actual_model_root?(item)
+      parent = item.parent
+      while parent
+        return false if parent.respond_to?(:cosmosys_poris?) && parent.cosmosys_poris?
+
+        parent = parent.parent
+      end
+      true
     end
 
     def generate_unmodeled_system_children(system)
@@ -210,7 +243,8 @@ module CosmosysPoris
         CONTAINER_KINDS.include?(child.cosmosys_item_kind_key)
       end
       modes = child_containers.flat_map { |child| direct_children(child, 'poris_mode') }
-      direct_value_targets = Array(@option_targets[mode.id]).select do |target|
+      mode_targets = mode ? Array(@option_targets[mode.id]) : []
+      direct_value_targets = mode_targets.select do |target|
         target.cosmosys_item_kind_key == 'poris_value' &&
           child_containers.any? { |child| child.id == target.parent_issue_id }
       end
@@ -220,7 +254,7 @@ module CosmosysPoris
       (modes + values).uniq(&:id).sort_by { |item| [item.csposition.to_i, item.lft.to_i, item.id] }
     end
 
-    def add_blocked_choice_validation(blocked, selected_modes)
+    def add_blocked_choice_validation(blocked, selected_modes, root_state: nil)
       context = selected_mode_context(selected_modes)
       if blocked.cosmosys_item_kind_key == 'poris_mode'
         target_container = @items_by_id[blocked.parent_issue_id]
@@ -231,16 +265,24 @@ module CosmosysPoris
             'validation.step.blocked_mode_expected',
             container: name(target_container),
             mode: name(blocked),
-            continuity: active_mode_continuity(selected_modes)
+            continuity: active_mode_continuity(selected_modes, root_state: root_state)
           ),
           negative: true
         )
       else
         parameter = @items_by_id[blocked.parent_issue_id]
+        value_stimuli = if context.blank?
+                          tr('validation.step.request_value_without_mode', parameter: name(parameter), value: name(blocked))
+                        else
+                          tr('validation.step.attempt_blocked_value', context: context, parameter: name(parameter), value: name(blocked))
+                        end
+        expected = tr('validation.step.blocked_value_expected', parameter: name(parameter), value: name(blocked))
+        continuity = active_mode_continuity(selected_modes, root_state: root_state)
+        expected = "#{expected} #{continuity}" if continuity.present?
         add_validation(
           tr('validation.step.blocked_value_title', value: name(blocked), parameter: name(parameter)),
-          stimuli: tr('validation.step.attempt_blocked_value', context: context, parameter: name(parameter), value: name(blocked)),
-          expected: tr('validation.step.blocked_value_expected', parameter: name(parameter), value: name(blocked)),
+          stimuli: value_stimuli,
+          expected: expected,
           negative: true
         )
       end
@@ -318,12 +360,17 @@ module CosmosysPoris
       modes.map { |mode| "#{name(@items_by_id[mode.parent_issue_id])}: #{name(mode)}" }.join(' → ')
     end
 
-    def active_mode_continuity(modes)
-      modes.map do |mode|
+    def active_mode_continuity(modes, root_state: nil)
+      entries = []
+      entries << root_state if root_state
+      entries.concat(modes.map do |mode|
+        { container: @items_by_id[mode.parent_issue_id], mode: name(mode) }
+      end)
+      entries.uniq { |entry| entry[:container]&.id }.map do |entry|
         tr(
           'validation.step.active_mode_continues_expected',
-          container: name(@items_by_id[mode.parent_issue_id]),
-          mode: name(mode)
+          container: name(entry[:container]),
+          mode: entry[:mode]
         )
       end.join(' ')
     end
