@@ -8,6 +8,10 @@ en:
   label_cosmosys_poris_value: PORIS value
   label_cosmosys_poris_cmd: PORIS command
   label_cosmosys_poris_metadata: PORIS attributes
+  label_cosmosys_poris_generated_preview: Generated specification previews (experimental)
+  label_cosmosys_poris_requirements_preview: Requirements preview
+  label_cosmosys_poris_validation_preview: Validation plan preview
+  text_cosmosys_poris_preview_not_saved: These previews are generated on demand and are not saved.
   label_cosmosys_poris_enum: Enumeration (discrete option)
   label_cosmosys_poris_float: Floating-point value
   label_cosmosys_poris_text: Text value

@@ -8,6 +8,10 @@ es:
   label_cosmosys_poris_value: Valor PORIS
   label_cosmosys_poris_cmd: Comando PORIS
   label_cosmosys_poris_metadata: Atributos PORIS
+  label_cosmosys_poris_generated_preview: Vistas previas de especificación generada (experimental)
+  label_cosmosys_poris_requirements_preview: Vista previa de requisitos
+  label_cosmosys_poris_validation_preview: Vista previa del plan de validación
+  text_cosmosys_poris_preview_not_saved: Estas vistas previas se generan al consultar el ítem y no se guardan.
   label_cosmosys_poris_enum: Enumerado (opción discreta)
   label_cosmosys_poris_float: Valor flotante
   label_cosmosys_poris_text: Valor de texto

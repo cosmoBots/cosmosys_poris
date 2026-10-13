@@ -47,6 +47,46 @@ Con un único candidato, no muestra selector adicional.
 En el alcance de proyecto, la pestaña PORIS presenta el visor a la izquierda y
 el diagrama combinado de cosmoSys a la derecha; en pantallas estrechas se apilan.
 
+### Vistas previas de requisitos y validación
+
+En la ficha de cada ítem PORIS se muestran dos vistas previas Markdown: los
+fragmentos de requisitos y de validación que aporta ese elemento PORIS. Un
+sistema (`prSys`) expone los sistemas y parámetros que contiene y llega hasta
+los modos de esos parámetros; no incluye sus valores internos. La vista de un
+parámetro (`prParam`), en cambio, puede continuar hasta sus valores y rangos.
+Para modos, valores y comandos se incorpora el contexto PORIS inmediato. Las
+relaciones `blocks` acotan los destinos descritos.
+
+Cada vista empieza por un listado común de candidatos `csDatum`, deduplicado
+por clave semántica, para que requisitos y validación puedan referirse al mismo
+dato pendiente. Los IDs `R-XXXX` y `V-XXXX` son provisionales y se calculan para
+la vista; no son IDs persistidos. Las vistas se generan síncronamente al abrir
+la ficha, no escriben en Redmine y todavía son experimentales.
+
+Los propósitos no definidos se presentan como notas informativas con su
+referencia de valor `${poris.<CSID>.purpose.value}`, no con un `TBD` literal.
+Las notas se organizan en
+capítulos Markdown sin numeración, como anticipo de futuros `csInfo`. En la
+vista de un `prSys` aparecen en una lista plana bajo «Información del sistema
+<nombre>»; las referencias a parámetros y modos incluyen el sistema contenedor
+para desambiguarlas. La vista de requisitos de un `prSys` incluye una
+descripción general y capítulos «Parámetros» y «Modos de funcionamiento». Los
+requisitos son atómicos: para cada parámetro solo se requieren los modos
+enlazados desde los modos del sistema; cada modo consumido se declara
+individualmente bajo un subcapítulo del parámetro. En «Modos de funcionamiento»
+se indica primero la disponibilidad de cada modo y después sus efectos. Así,
+añadir un modo no cambia una lista normativa ya aprobada ni obliga a subsistemas
+reutilizados a ofrecer modos que el sistema no consume. Los detalles internos
+de los valores de los parámetros quedan fuera de ese alcance. Los fragmentos
+generados son requisitos independientes y no condicionan su validez a que
+PORIS siga presente.
+
+Para un `prMode`, la vista de requisitos declara primero el modo que ofrece su
+contenedor. Si el modo habilita modos de parámetros hijos, genera una
+obligación por parámetro indicando el modo seleccionado, sin expandir los
+valores numéricos descendientes. El propósito que falte se presenta como nota
+informativa ligada a un candidato `csDatum`, no como requisito.
+
 ### Evolución prevista: configuración PORIS y realce del diagrama
 
 El viewer ya mantiene en memoria el grafo PORIS parseado y el estado reactivo
