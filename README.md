@@ -231,6 +231,11 @@ contenedores hijos `prSys`/`prParam`, y los comandos comparten fila con los
 modos, sin mostrar flechas: son anclas y restricciones de layout invisibles de
 Graphviz, no relaciones del modelo.
 
+En los diagramas de dependencias y combinados, las relaciones `precedes` PORIS
+se dibujan en naranja (`#FF9900`), con trazo continuo y punta abierta en V
+(`vee`), siguiendo el estilo de GraphML. Las relaciones de otros perfiles
+conservan el estilo general de cosmoSys.
+
 `porisViewer` es un proyecto reutilizable e independiente de este plugin. En el
 workspace de desarrollo `csys` está disponible como submódulo hermano; no se
 incluye aquí para evitar anidar un componente que otros proyectos también

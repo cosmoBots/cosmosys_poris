@@ -91,6 +91,24 @@ module CosmosysPoris
       cosmosys_poris_wrapped_name(subject, boundary: boundary)
     end
 
+    def cosmosys_dependency_relation_color(relation_type)
+      return '#FF9900' if cosmosys_poris? && relation_type.to_s == 'precedes'
+
+      super
+    end
+
+    def cosmosys_dependency_relation_arrowhead(relation_type)
+      return 'vee' if cosmosys_poris? && relation_type.to_s == 'precedes'
+
+      super
+    end
+
+    def cosmosys_dependency_relation_edge_style(relation_type)
+      return 'solid' if cosmosys_poris? && relation_type.to_s == 'precedes'
+
+      super
+    end
+
     def cosmosys_poris_labels_payload
       return '[]' unless cosmosys_poris?
 
