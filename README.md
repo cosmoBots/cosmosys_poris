@@ -15,6 +15,21 @@ o valores. `prValue` usa un solo tracker y `pr_value_kind` diferencia valores
 enumerados (opción discreta), numéricos y de texto. Las etiquetas por ámbito se guardan como asociaciones, no
 como campos personalizados.
 
+Contrato PORIS acordado, aún pendiente de implementación completa: sólo la raíz
+real del modelo ofrece `Unknown` al usuario; los descendientes conservan el modo
+activo si sigue siendo elegible, eligen la primera alternativa elegible si no,
+y pasan a `Unknown` si no hay alternativas. Para valores discretos se aplica la
+misma regla de conservación/primera alternativa/sin selección; para rangos
+numéricos se conserva el dato si es válido y, si no, se usa el default del rango
+activo. `Unknown` es el modo predeterminado de arranque y representa
+inactividad lógica, no un mecanismo físico. La referencia normativa está en
+`docs/poris_unknown_mode_semantics.md` del workspace csys.
+
+Actualmente las relaciones `blocks` habilitan modos y valores. El contrato
+acordado prevé migrarlas a relaciones `precedes` PORIS con `delay` reinterpretado
+como prioridad (valor más alto primero); la migración y la adaptación de
+snapshots/ODS están pendientes.
+
 ## Requisitos e instalación
 
 - Redmine 7.0.1.
@@ -99,9 +114,19 @@ cada paso muestra por separado título, estímulos y resultado esperado, con la
 estructura de `tpStep` de `cosmosys_val`. Los rangos flotantes generan pasos
 individuales para el valor predeterminado, ambos límites, puntos interiores
 (`mínimo + tolerancia`, `máximo - tolerancia`) y exteriores (`mínimo -
-tolerancia`, `máximo + tolerancia`). Todavía no se generan recorridos completos
-para posicionar todos los modos ni comprobaciones negativas de modos
-incompatibles; quedan para una iteración posterior.
+tolerancia`, `máximo + tolerancia`). Cada estímulo del plan es una solicitud al
+sistema y cada resultado indica si el sistema la acepta o rechaza; no se
+presupone una interfaz gráfica ni una acción de «seleccionar». Los pasos que
+esperan un rechazo (opciones bloqueadas o entradas numéricas exteriores al
+rango) se muestran en rojo y describen la respuesta del sistema. Para
+contenedores con modos, el plan recorre
+las opciones con búsqueda en profundidad y retroceso: en cada estado prueba
+primero las opciones bloqueadas de la frontera inmediata, explora después cada
+opción habilitada y vuelve al nivel más cercano para continuar por la siguiente
+rama. No desciende por ramas bloqueadas. En el preview agregado del proyecto,
+la validación se genera desde las raíces para evitar repetir pasos en previews
+por parámetro; los requisitos siguen incluyendo esos alcances detallados. La
+estrategia está detallada en `docs/poris_spec_validation_generator_design.md`.
 Las plantillas Markdown están en los ficheros de locale inglés y español y se
 resuelven con el idioma configurado en el proyecto, no con el idioma de
 interfaz del usuario. Admiten interpolaciones nombradas de I18n para los
@@ -159,6 +184,12 @@ La evolución propuesta es:
    El POST de la configuración completa se reserva para cuando haya un
    consumidor servidor o persistencia que lo justifique; el realce visual por
    sí solo no requiere enviarlo.
+
+5. Como mejora futura del plan de validación, al seleccionar un paso de prueba
+   realzar en el diagrama los nodos PORIS que intervienen en ese paso. Para ello
+   cada paso necesitará conservar los CSID involucrados y el SVG deberá exponer
+   una identidad estable asociada a cada nodo. Esto es independiente del
+   recorrido DFS ya generado y todavía no está implementado.
 
 Antes de implementar la API se decidirá el identificador estable compartido
 entre XML del modelo, configuración serializada y SVG, así como el momento de

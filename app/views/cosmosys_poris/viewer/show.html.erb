@@ -40,7 +40,7 @@
       </section>
       <section class="splitcontentright">
         <h4><%= l(:label_cosmosys_poris_validation_preview) %></h4>
-        <div class="wiki"><%= textilizable(@project_preview.validation_markdown, object: @project, project: @project) %></div>
+        <div class="wiki cosmosys-poris-validation-preview"><%= textilizable(@project_preview.validation_markdown, object: @project, project: @project) %></div>
         <% if @validation_plugin_installed %>
           <button type="button" class="button poris-generation-ack" data-message="<%= l(:text_cosmosys_poris_preview_ack) %>"><%= l(:label_cosmosys_poris_generate_validation) %></button>
         <% end %>

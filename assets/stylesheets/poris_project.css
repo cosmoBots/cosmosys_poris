@@ -5,6 +5,10 @@
   align-items: start;
 }
 
+.cosmosys-poris-validation-preview p > span {
+  color: #b42318;
+}
+
 .poris-project-layout-with-diagram .poris-project-diagram {
   min-width: 0;
   overflow: auto;

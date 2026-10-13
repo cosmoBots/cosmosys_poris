@@ -79,6 +79,10 @@ module CosmosysPoris
     end
 
     def generate_fragments
+      if %w[poris_sys poris_param poris_mode].include?(issue.cosmosys_item_kind_key)
+        @suppress_validation = true
+      end
+
       case issue.cosmosys_item_kind_key
       when 'poris_sys'
         describe_system_scope(issue)
@@ -91,8 +95,236 @@ module CosmosysPoris
       when 'poris_cmd'
         describe_command(issue)
       end
+
+      if %w[poris_sys poris_param poris_mode].include?(issue.cosmosys_item_kind_key)
+        @suppress_validation = false
+        if issue.cosmosys_item_kind_key == 'poris_mode'
+          generate_selected_mode_validation_traversal(issue)
+        else
+          generate_validation_traversal(issue)
+        end
+      end
+
       @requirements = @requirements.uniq
       @validations = @validations.uniq
+    end
+
+    # Generate a depth-first walk of the configuration choices. A stimulus is
+    # always a request to the system, never an instruction to use a particular
+    # UI. At each active mode, first request every immediate lower-level option
+    # that is not enabled, then request and recurse into each enabled option.
+    def generate_validation_traversal(root)
+      root_modes = direct_children(root, 'poris_mode')
+      if root_modes.empty?
+        case root.cosmosys_item_kind_key
+        when 'poris_param' then generate_unmodeled_parameter_value_checks(root)
+        when 'poris_sys' then generate_unmodeled_system_children(root)
+        end
+        return
+      end
+
+      root_modes.each do |mode|
+        mode_container = @items_by_id[mode.parent_issue_id]
+        add_validation(
+          tr('validation.step.request_root_mode_title', container: name(mode_container), mode: name(mode)),
+          stimuli: tr('validation.step.set_root_mode', container: name(mode_container), mode: name(mode)),
+          expected: tr('validation.step.root_mode_now_expected', container: name(mode_container), mode: name(mode))
+        )
+        traverse_validation_mode(mode, [mode])
+      end
+    end
+
+    def generate_unmodeled_system_children(system)
+      Array(@children[system.id]).select { |child| CONTAINER_KINDS.include?(child.cosmosys_item_kind_key) }
+                                 .sort_by { |child| [child.csid.to_s, child.id] }
+                                 .each do |container|
+        modes = direct_children(container, 'poris_mode')
+        if modes.any?
+          modes.each do |mode|
+            add_validation(
+              tr('validation.step.request_root_mode_title', container: name(container), mode: name(mode)),
+              stimuli: tr('validation.step.set_root_mode', container: name(container), mode: name(mode)),
+              expected: tr('validation.step.root_mode_now_expected', container: name(container), mode: name(mode))
+            )
+            traverse_validation_mode(mode, [mode])
+          end
+        elsif container.cosmosys_item_kind_key == 'poris_sys'
+          generate_unmodeled_system_children(container)
+        else
+          generate_unmodeled_parameter_value_checks(container)
+        end
+      end
+    end
+
+    def generate_selected_mode_validation_traversal(mode)
+      container = @items_by_id[mode.parent_issue_id]
+      add_validation(
+        tr('validation.step.request_root_mode_title', container: name(container), mode: name(mode)),
+        stimuli: tr('validation.step.set_root_mode', container: name(container), mode: name(mode)),
+        expected: tr('validation.step.root_mode_now_expected', container: name(container), mode: name(mode))
+      )
+      traverse_validation_mode(mode, [mode])
+    end
+
+    def traverse_validation_mode(mode, selected_modes)
+      container = @items_by_id[mode.parent_issue_id]
+      candidates = validation_frontier_candidates(container, mode)
+      targets = Array(@block_targets[mode.id]).to_h { |target| [target.id, target] }
+
+      # PORIS `blocks` relations point at the options enabled by the active
+      # mode. Every other option on this immediate frontier is a closed door.
+      enabled_candidates = candidates.select { |candidate| targets.key?(candidate.id) }
+      closed_candidates = candidates - enabled_candidates
+
+      closed_candidates.each do |blocked|
+        add_blocked_choice_validation(blocked, selected_modes)
+      end
+
+      enabled_candidates.each do |enabled|
+        if enabled.cosmosys_item_kind_key == 'poris_mode'
+          add_validation(
+            tr('validation.step.request_enabled_mode_title', mode: name(enabled), container: name(@items_by_id[enabled.parent_issue_id])),
+            stimuli: tr('validation.step.request_enabled_mode_stimuli', context: selected_mode_context(selected_modes), container: name(@items_by_id[enabled.parent_issue_id]), mode: name(enabled)),
+            expected: tr('validation.step.requested_mode_accepted_expected', container: name(@items_by_id[enabled.parent_issue_id]), mode: name(enabled))
+          )
+          traverse_validation_mode(enabled, selected_modes + [enabled])
+        elsif enabled.cosmosys_item_kind_key == 'poris_value'
+          generate_enabled_value_validations(enabled, selected_modes)
+        end
+      end
+    end
+
+    # A system mode controls the modes of its directly contained systems and
+    # parameters. Directly targeted values are also a frontier when the mode
+    # targets values in that child parameter. A parameter mode controls only
+    # the values contained by that parameter.
+    def validation_frontier_candidates(container, mode)
+      return [] unless container
+
+      if container.cosmosys_item_kind_key == 'poris_param'
+        return direct_children(container, 'poris_value')
+      end
+
+      child_containers = Array(@children[container.id]).select do |child|
+        CONTAINER_KINDS.include?(child.cosmosys_item_kind_key)
+      end
+      modes = child_containers.flat_map { |child| direct_children(child, 'poris_mode') }
+      direct_value_targets = Array(@block_targets[mode.id]).select do |target|
+        target.cosmosys_item_kind_key == 'poris_value' &&
+          child_containers.any? { |child| child.id == target.parent_issue_id }
+      end
+      value_parameters = direct_value_targets.map(&:parent_issue_id).uniq
+      values = child_containers.select { |child| value_parameters.include?(child.id) }
+                               .flat_map { |child| direct_children(child, 'poris_value') }
+      (modes + values).uniq(&:id).sort_by { |item| [item.csid.to_s, item.id] }
+    end
+
+    def add_blocked_choice_validation(blocked, selected_modes)
+      context = selected_mode_context(selected_modes)
+      if blocked.cosmosys_item_kind_key == 'poris_mode'
+        target_container = @items_by_id[blocked.parent_issue_id]
+        add_validation(
+          tr('validation.step.blocked_mode_title', mode: name(blocked), container: name(target_container)),
+          stimuli: tr('validation.step.attempt_blocked_mode', container: name(target_container), mode: name(blocked)),
+          expected: tr(
+            'validation.step.blocked_mode_expected',
+            container: name(target_container),
+            mode: name(blocked),
+            continuity: active_mode_continuity(selected_modes)
+          ),
+          negative: true
+        )
+      else
+        parameter = @items_by_id[blocked.parent_issue_id]
+        add_validation(
+          tr('validation.step.blocked_value_title', value: name(blocked), parameter: name(parameter)),
+          stimuli: tr('validation.step.attempt_blocked_value', context: context, parameter: name(parameter), value: name(blocked)),
+          expected: tr('validation.step.blocked_value_expected', parameter: name(parameter), value: name(blocked)),
+          negative: true
+        )
+      end
+    end
+
+    def generate_enabled_value_validations(value, selected_modes)
+      parameter = @items_by_id[value.parent_issue_id]
+      return unless parameter
+
+      register_value_validation_datums(value)
+      context = selected_mode_context(selected_modes)
+      value_stimuli = if selected_modes.empty?
+                        tr('validation.step.request_value_without_mode', parameter: name(parameter), value: name(value))
+                      else
+                        tr('validation.step.request_enabled_value', context: context, parameter: name(parameter), value: name(value))
+                      end
+      add_validation(
+        tr('validation.step.enabled_value_title', value: name(value), parameter: name(parameter)),
+        stimuli: value_stimuli,
+        expected: tr('validation.step.enabled_value_expected', parameter: name(parameter), value: name(value))
+      )
+
+      case value.pr_value_kind
+      when 'float'
+        minimum = value.pr_min || datum_reference(value, 'minimum')
+        maximum = value.pr_max || datum_reference(value, 'maximum')
+        default = value.pr_default || datum_reference(value, 'default')
+        add_float_range_validation_steps(value, parameter, minimum: minimum, maximum: maximum, default: default, mode_context: context)
+      when 'enum'
+        missing_datum(value, 'default', tr('datum.enum_default'))
+        add_validation(
+          tr('validation.step.enum_default_title', name: name(value)),
+          stimuli: tr('validation.step.enum_default_stimuli', name: name(value)),
+          expected: tr('validation.step.enum_default_expected', name: name(value), value_default: datum_reference(value, 'default'))
+        )
+      when 'text'
+        missing_datum(value, 'constraints', tr('datum.text_constraints'))
+        add_validation(
+          tr('validation.step.text_constraints_title', name: name(value)),
+          stimuli: tr('validation.step.text_constraints_stimuli', name: name(value)),
+          expected: tr('validation.step.text_constraints_expected', constraints: datum_reference(value, 'constraints'))
+        )
+      end
+    end
+
+    def generate_unmodeled_parameter_value_checks(parameter)
+      direct_children(parameter, 'poris_value').each do |value|
+        generate_enabled_value_validations(value, [])
+      end
+    end
+
+    def register_value_validation_datums(value)
+      case value.pr_value_kind
+      when 'float'
+        missing_datum(value, 'unit', tr('datum.range_unit'))
+        missing_datum(value, 'resolution', tr('datum.range_resolution'))
+        missing_datum(value, 'bounds_inclusivity', tr('datum.bounds_inclusivity'))
+        missing_datum(value, 'tolerance', tr('datum.range_tolerance'))
+        missing_datum(value, 'minimum', tr('datum.range_minimum')) if value.pr_min.nil?
+        missing_datum(value, 'maximum', tr('datum.range_maximum')) if value.pr_max.nil?
+        missing_datum(value, 'default', tr('datum.range_default')) if value.pr_default.nil?
+      when 'enum'
+        missing_datum(value, 'default', tr('datum.enum_default'))
+      when 'text'
+        missing_datum(value, 'constraints', tr('datum.text_constraints'))
+      end
+    end
+
+    def direct_children(parent, kind)
+      Array(@children[parent.id]).select { |child| child.cosmosys_item_kind_key == kind }
+                                  .sort_by { |child| [child.csid.to_s, child.id] }
+    end
+
+    def selected_mode_context(modes)
+      modes.map { |mode| "#{name(@items_by_id[mode.parent_issue_id])}: #{name(mode)}" }.join(' → ')
+    end
+
+    def active_mode_continuity(modes)
+      modes.map do |mode|
+        tr(
+          'validation.step.active_mode_continues_expected',
+          container: name(@items_by_id[mode.parent_issue_id]),
+          mode: name(mode)
+        )
+      end.join(' ')
     end
 
     def subtree(root)
@@ -293,7 +525,7 @@ module CosmosysPoris
           add_requirement(tr('requirement.mode_enables_parameter', mode: name(item), parameter: name(target)))
           add_validation(
             tr('validation.step.mode_enables_parameter_title', mode: name(item), parameter: name(target)),
-            stimuli: tr('validation.step.select_mode', mode: name(item)),
+            stimuli: tr('validation.step.request_mode', mode: name(item)),
             expected: tr('validation.step.mode_enables_parameter_expected', mode: name(item), parameter: name(target))
           )
           subtree(target).drop(1).each { |descendant| describe_item(descendant) }
@@ -306,7 +538,7 @@ module CosmosysPoris
             add_requirement(tr('requirement.system_mode_selects_parameter_mode', system: name(container), mode: name(item), parameter: name(target_container), parameter_mode: name(target)))
             add_validation(
               tr('validation.step.system_mode_selects_parameter_mode_title', mode: name(item), system: name(container), parameter: name(target_container)),
-              stimuli: tr('validation.step.select_mode_in_system', mode: name(item), system: name(container)),
+              stimuli: tr('validation.step.request_mode_in_system', mode: name(item), system: name(container)),
               expected: tr('validation.step.system_mode_selects_parameter_mode_expected', parameter: name(target_container), parameter_mode: name(target))
             )
           else
@@ -315,7 +547,7 @@ module CosmosysPoris
             add_requirement(tr('requirement.container_mode_selects_child_mode', context: context, mode: name(item), noun: target_noun, child: name(target_container), child_mode: name(target)))
             add_validation(
               tr('validation.step.container_mode_selects_child_mode_title', mode: name(item), noun: target_noun, child: name(target_container)),
-              stimuli: tr('validation.step.select_mode', mode: name(item)),
+              stimuli: tr('validation.step.request_mode', mode: name(item)),
               expected: tr('validation.step.container_mode_selects_child_mode_expected', noun: target_noun, child: name(target_container), child_mode: name(target))
             )
           end
@@ -332,7 +564,7 @@ module CosmosysPoris
           if parameter
             add_validation(
               tr('validation.step.mode_enables_value_title', mode: name(item), value: name(target), parameter: name(parameter)),
-              stimuli: tr('validation.step.select_mode', mode: name(item)),
+              stimuli: tr('validation.step.request_mode', mode: name(item)),
               expected: tr('validation.step.mode_enables_value_expected', value: name(target), parameter: name(parameter))
             )
           end
@@ -349,7 +581,7 @@ module CosmosysPoris
       add_requirement(tr('requirement.container_offers_mode', noun: noun, container: name(container), mode: name(item))) if offer_requirement
       add_validation(
         tr('validation.step.container_offers_mode_title', noun: noun, container: name(container), mode: name(item)),
-        stimuli: tr('validation.none'),
+        stimuli: tr('validation.step.request_mode_in_container', container: name(container), mode: name(item)),
         expected: tr('validation.step.container_offers_mode_expected', noun: noun, container: name(container), mode: name(item))
       )
     end
@@ -372,7 +604,7 @@ module CosmosysPoris
           end
           add_validation(
             tr('validation.step.value_admitted_by_modes_title', value: name(item), parameter: name(parameter)),
-            stimuli: tr('validation.step.select_one_mode', modes: names(related_modes)),
+            stimuli: tr('validation.step.request_one_mode', modes: names(related_modes)),
             expected: tr('validation.step.value_admitted_by_modes_expected', value: name(item), parameter: name(parameter))
           )
         end
@@ -462,7 +694,7 @@ module CosmosysPoris
       end
     end
 
-    def add_float_range_validation_steps(item, parameter, minimum:, maximum:, default:)
+    def add_float_range_validation_steps(item, parameter, minimum:, maximum:, default:, mode_context: nil)
       return unless parameter
 
       unit = datum_reference(item, 'unit')
@@ -470,10 +702,15 @@ module CosmosysPoris
       resolution = datum_reference(item, 'resolution')
       inclusivity = datum_reference(item, 'bounds_inclusivity')
       range = "[#{minimum}…#{maximum}]"
+      default_stimuli = if mode_context && !mode_context.empty?
+                          tr('validation.step.float_default_stimuli_in_context', context: mode_context, parameter: name(parameter), value: name(item))
+                        else
+                          tr('validation.step.float_default_stimuli', parameter: name(parameter), value: name(item))
+                        end
 
       add_validation(
         tr('validation.step.float_default_title', value: name(item)),
-        stimuli: tr('validation.step.float_default_stimuli', parameter: name(parameter), value: name(item)),
+        stimuli: default_stimuli,
         expected: tr('validation.step.float_default_expected', value_default: default)
       )
       { minimum => 'minimum', maximum => 'maximum' }.each do |bound, key|
@@ -494,7 +731,8 @@ module CosmosysPoris
         add_validation(
           tr('validation.step.float_exterior_title', value: name(item), point: point),
           stimuli: tr('validation.step.float_set_point', parameter: name(parameter), value: name(item), point: point, unit: unit),
-          expected: tr('validation.step.float_exterior_expected', point: point, range: range, value_default: default, resolution: resolution, inclusivity: inclusivity, bound: bound)
+          expected: tr('validation.step.float_exterior_expected', point: point, range: range, value_default: default, resolution: resolution, inclusivity: inclusivity, bound: bound),
+          negative: true
         )
       end
     end
@@ -719,8 +957,10 @@ module CosmosysPoris
       tr('phrase.parent_qualifier', name: name(parent)) if parent
     end
 
-    def add_validation(title, stimuli:, expected:)
-      @validations << { title: title, stimuli: stimuli, expected: expected }
+    def add_validation(title, stimuli:, expected:, negative: false)
+      return if @suppress_validation
+
+      @validations << { title: title, stimuli: stimuli, expected: expected, negative: negative }
     end
 
     def validations_markdown
@@ -730,7 +970,8 @@ module CosmosysPoris
       missing_datum(issue, 'test_postconditions', tr('datum.test_case_postconditions'))
       title = tr('validation.test_case_title', noun: datum_item_noun(issue), name: name(issue))
       steps = @validations.uniq.each_with_index.map do |step, index|
-        tr('validation.numbered', id: format('V-%04d', index + 1), title: step[:title], stimuli: step[:stimuli], expected: step[:expected])
+        template = step[:negative] ? 'validation.numbered_negative' : 'validation.numbered'
+        tr(template, id: format('V-%04d', index + 1), title: step[:title], stimuli: step[:stimuli], expected: step[:expected])
       end.join("\n\n")
       tr('validation.test_case', title: title,
          preconditions: datum_reference(issue, 'test_preconditions'),

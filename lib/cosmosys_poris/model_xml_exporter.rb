@@ -35,11 +35,14 @@ module CosmosysPoris
 
     def visible_candidate_items
       project_ids = scoped_project_ids
-      Issue.visible(@user)
-           .where(project_id: project_ids)
-           .includes(:parent, cosmosys_poris_labels: :label_scope)
-           .to_a
-           .select(&:cosmosys_poris?)
+      candidates = Issue.visible(@user)
+                        .where(project_id: project_ids)
+                        .includes(:parent, cosmosys_poris_labels: :label_scope)
+                        .to_a
+                        .select(&:cosmosys_poris?)
+      ordered = order_by_tree_position(candidates)
+      @tree_order_index = ordered.each_with_index.to_h { |item, index| [item.id, index] }
+      ordered
     end
 
     def scoped_project_ids
@@ -175,6 +178,7 @@ module CosmosysPoris
     def focused_block_targets(mode)
       Array(@block_targets[mode.id]).filter_map { |id| @candidate_items_by_id[id] }
         .select { |target| %w[poris_mode poris_value].include?(target.cosmosys_item_kind_key) }
+        .sort_by { |target| tree_order_key(target) }
     end
 
     def add_focused_container_commands(container)
@@ -323,10 +327,42 @@ module CosmosysPoris
         Array(@children[issue.id]).select { |child| NODE_TYPES.key?(child.cosmosys_item_kind_key) && child.cosmosys_item_kind_key != 'poris_cmd' }
       when 'poris_mode'
         relation_ids = IssueRelation.where(issue_from_id: issue.id, relation_type: 'blocks').order(:id).pluck(:issue_to_id)
-        relation_ids.filter_map { |id| @items[id] }.select { |target| %w[poris_mode poris_value].include?(target.cosmosys_item_kind_key) }
+        relation_ids.filter_map { |id| @items[id] }
+                    .select { |target| %w[poris_mode poris_value].include?(target.cosmosys_item_kind_key) }
+                    .sort_by { |target| tree_order_key(target) }
       else
         []
       end
+    end
+
+    # Use the same sibling order as the cosmoSys tree (`csposition`, then the
+    # nested-set position and ID as stable tie-breakers). PORIS form controls
+    # consume these destinations in order, so modes and child containers are
+    # offered consistently with the tree view and its diagrams.
+    def order_by_tree_position(items)
+      by_parent = items.group_by(&:parent_issue_id)
+      item_ids = items.to_h { |item| [item.id, true] }
+      sibling_key = ->(item) { [item.csposition.to_i, item.lft.to_i, item.id] }
+      ordered = []
+      visited = {}
+
+      visit = lambda do |item|
+        return if visited[item.id]
+
+        visited[item.id] = true
+        ordered << item
+        Array(by_parent[item.id]).sort_by(&sibling_key).each { |child| visit.call(child) }
+      end
+
+      items.select { |item| item.parent_issue_id.blank? || !item_ids.key?(item.parent_issue_id) }
+           .sort_by(&sibling_key)
+           .each { |root| visit.call(root) }
+      items.sort_by(&sibling_key).each { |item| visit.call(item) }
+      ordered
+    end
+
+    def tree_order_key(item)
+      [@tree_order_index&.fetch(item.id, nil) || Float::INFINITY, item.id]
     end
 
     def node_definition(issue)

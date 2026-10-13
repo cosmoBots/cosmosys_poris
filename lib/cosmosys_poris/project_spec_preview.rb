@@ -35,10 +35,11 @@ module CosmosysPoris
         end)
 
         datums = previews.flat_map { |_item, preview, _scope| preview.datums }.uniq { |datum| datum[:key].downcase }
+        validation_previews = previews.select { |_item, _preview, scope| scope == :root }
 
         Result.new(
           requirements_markdown: document(datums_markdown(datums) + roots_body(previews, :requirements_body, 'requirements')),
-          validation_markdown: document(datums_markdown(datums) + roots_body(previews, :validation_body, 'validation')),
+          validation_markdown: document(datums_markdown(datums) + roots_body(validation_previews, :validation_body, 'validation')),
           datums: datums
         )
       end

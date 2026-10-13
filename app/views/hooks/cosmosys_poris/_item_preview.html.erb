@@ -1,5 +1,6 @@
 <% issue = local_assigns[:issue] || @issue %>
 <% if issue&.cosmosys_poris? %>
+  <%= stylesheet_link_tag 'poris_project.css', plugin: 'cosmosys_poris' %>
   <% preview = CosmosysPoris::SpecPreview.new(issue).render %>
   <div class="box cosmosys-poris-spec-preview">
     <h3><%= l(:label_cosmosys_poris_generated_preview) %></h3>
@@ -10,7 +11,7 @@
       </section>
       <section class="splitcontentright">
         <h4><%= l(:label_cosmosys_poris_validation_preview) %></h4>
-        <div class="wiki"><%= textilizable(preview.validation_markdown, object: issue, project: issue.project) %></div>
+        <div class="wiki cosmosys-poris-validation-preview"><%= textilizable(preview.validation_markdown, object: issue, project: issue.project) %></div>
       </section>
     </div>
     <p class="help"><%= l(:text_cosmosys_poris_preview_not_saved) %></p>
