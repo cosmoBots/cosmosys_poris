@@ -6961,7 +6961,7 @@ const kl = Jm("model", () => {
   }
   function R(_, O, W) {
     const A = new Set(_.modesNodes.map((F) => F.id));
-    let M = W.modesNodes.filter((F) => A.has(F.id));
+    let M = (W.modesNodes || []).filter((F) => A.has(F.id));
     return hn(`   setValidMode validModes  len ${M.length}`, M), g(_, O, M);
   }
   function V(_) {
@@ -6972,7 +6972,7 @@ const kl = Jm("model", () => {
     if (_.parent != null && _.parent.currentMode != null) {
       hn(`parent: ${_.parent.name}`), hn(`parent mode: ${_.parent.currentMode.name}`), hn("parent.mode.submodes:", _.parent.currentMode.modesNodes);
       const O = new Set(_.modesNodes.map((W) => W.id));
-      return _.parent.currentMode.modesNodes.filter((W) => O.has(W.id));
+      return (_.parent.currentMode.modesNodes || []).filter((W) => O.has(W.id));
     } else return _.parent != null ? [] : _.modesNodes;
   }
   function P(_) {
