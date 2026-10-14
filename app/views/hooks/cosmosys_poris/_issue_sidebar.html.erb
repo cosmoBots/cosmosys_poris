@@ -1,5 +1,5 @@
 <% if @issue&.cosmosys_poris? && @project&.csys_project_profile == 'poris' %>
-  <% initial_model_url = project_poris_model_path(@project, format: :xml, scope: 'node', issue_id: @issue.id) %>
+  <% initial_model_url = project_poris_model_path(@project, scope: 'node', issue_id: @issue.id) %>
   <%= stylesheet_link_tag 'poris_viewer/style.css', plugin: 'cosmosys_poris' %>
   <div class="box poris-view-scopes">
     <h3><%= l(:label_cosmosys_poris_view_scopes) %></h3>
@@ -10,7 +10,7 @@
                         class: 'poris-scope-link',
                         data: {
                           scope: scope,
-                          model_url: project_poris_model_path(@project, format: :xml, scope: scope, issue_id: @issue.id)
+                          model_url: project_poris_model_path(@project, scope: scope, issue_id: @issue.id)
                         },
                         aria: { current: ('page' if scope == 'node') } %></li>
       <% end %>
