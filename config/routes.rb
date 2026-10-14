@@ -7,6 +7,10 @@ get 'projects/:project_id/poris/model',
 get 'projects/:project_id/poris/panel',
     to: 'cosmosys_poris/viewer#panel',
     as: 'project_poris_panel'
+get 'projects/:project_id/poris/tabs/:tab',
+    to: 'cosmosys_poris/viewer#tab',
+    as: 'project_poris_tab',
+    constraints: { tab: /configuration|requirements|validation|constructor|automated_validation/ }
 post 'projects/:project_id/poris/commit',
      to: 'cosmosys_poris/viewer#commit',
      as: 'commit_project_poris_state'

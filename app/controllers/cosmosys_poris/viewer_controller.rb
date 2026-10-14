@@ -1,42 +1,30 @@
 module CosmosysPoris
   class ViewerController < ApplicationController
+    PROJECT_TABS = %w[configuration requirements validation constructor automated_validation].freeze
+
     before_action :find_project_by_project_id
     before_action :authorize
     before_action :load_poris_view_context
 
     def show
       @model_url = project_poris_model_path(@project, format: :xml, scope: @scope, issue_id: @issue&.id)
-      return unless @scope == 'project'
+      return unless @scope == 'project' && @issue.nil?
 
-      @project_tab = %w[configuration requirements validation constructor automated_validation].include?(params[:tab]) ? params[:tab] : 'configuration'
-
-      unless @issue
-        @runtime_state = hydrated_runtime_state
-        @runtime_commit_url = commit_project_poris_state_path(@project)
-        response.headers['Cache-Control'] = 'private, no-store'
-        @model_xml = ModelXmlExporter.new(@project, user: User.current, scope: 'project').render if @project_tab == 'configuration'
+      @project_tab = PROJECT_TABS.include?(params[:tab]) ? params[:tab] : 'configuration'
+      @project_tab_urls = PROJECT_TABS.to_h do |tab|
+        [tab, project_poris_tab_path(@project, tab: tab)]
       end
+      response.headers['Cache-Control'] = 'private, no-store'
+    end
 
-      @combined_diagram_url = cosmosys_diagram_export_path(
-        project_id: @project.identifier,
-        kind: 'combined',
-        diagram_format: 'svg',
-        combined_layout_mode: 'dot',
-        render_variant: 'v1',
-        visible_layers_present: 1,
-        visible_layers: %w[blocks precedes cross_project_boundaries]
-      )
-      return if @issue
+    def tab
+      raise ActiveRecord::RecordNotFound unless @scope == 'project' && @issue.nil?
+      raise ActiveRecord::RecordNotFound unless PROJECT_TABS.include?(params[:tab])
 
-      if %w[requirements validation].include?(@project_tab)
-        @project_preview = ProjectSpecPreview.new(@project, user: User.current).render
-      elsif @project_tab == 'constructor'
-        @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render(include_validation: false)
-      elsif @project_tab == 'automated_validation'
-        @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render
-      end
-      @requirements_plugin_installed = Redmine::Plugin.installed?(:cosmosys_req)
-      @validation_plugin_installed = Redmine::Plugin.installed?(:cosmosys_val)
+      @project_tab = params[:tab]
+      prepare_project_tab(@project_tab)
+      response.headers['Cache-Control'] = 'private, no-store'
+      render partial: "cosmosys_poris/viewer/tabs/#{@project_tab}"
     end
 
     def datum_preflight
@@ -164,6 +152,34 @@ module CosmosysPoris
     end
 
     private
+
+    def prepare_project_tab(tab)
+      case tab
+      when 'configuration'
+        @model_url = project_poris_model_path(@project, format: :xml, scope: 'project')
+        @runtime_state = hydrated_runtime_state
+        @runtime_commit_url = commit_project_poris_state_path(@project)
+        @combined_diagram_url = cosmosys_diagram_export_path(
+          project_id: @project.identifier,
+          kind: 'combined',
+          diagram_format: 'svg',
+          combined_layout_mode: 'dot',
+          render_variant: 'v1',
+          visible_layers_present: 1,
+          visible_layers: %w[blocks precedes cross_project_boundaries]
+        )
+      when 'requirements', 'validation'
+        @project_preview = ProjectSpecPreview.new(@project, user: User.current).render
+        @requirements_plugin_installed = Redmine::Plugin.installed?(:cosmosys_req)
+        @validation_plugin_installed = Redmine::Plugin.installed?(:cosmosys_val)
+      when 'constructor'
+        @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render(include_validation: false)
+      when 'automated_validation'
+        @runtime_state = hydrated_runtime_state
+        @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render
+      end
+    end
+    private :prepare_project_tab
 
     def load_poris_view_context
       raise ActiveRecord::RecordNotFound unless @project.csys_project_profile == 'poris'

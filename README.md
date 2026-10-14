@@ -152,6 +152,13 @@ resuelven con el idioma configurado en el proyecto, no con el idioma de
 interfaz del usuario. Admiten interpolaciones nombradas de I18n para los
 nombres PORIS, referencias, límites y demás contenido generado.
 
+En la vista de proyecto sólo se solicita el fragmento de la pestaña visible;
+los previews y el constructor se calculan en esa petición asíncrona, no al
+renderizar el shell ni para pestañas ocultas. El bundle de porisViewer se carga
+dinámicamente al abrir Configuración. Si al cambiar un modo padre un subnodo
+queda sin modos elegibles, pasa a `Unknown`, sus valores se limpian y desaparece
+del formulario inmediatamente.
+
 La pestaña de código produce una vista del constructor Ruby con accesos
 `sys<Name>`, `pr<Name>`, `md<Param>Mode_<Mode>` y `vl<Param>_<Value>`.
 Las llamadas generadas pasan las referencias a modos y valores mediante esos

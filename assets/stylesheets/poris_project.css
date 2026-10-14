@@ -56,6 +56,28 @@
   margin-bottom: 1em;
 }
 
+.poris-tab-loading {
+  display: flex;
+  align-items: center;
+  padding: 1em;
+  color: #666;
+}
+
+.poris-tab-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.5em;
+  border: 2px solid #c8d1d8;
+  border-top-color: #3e7ca5;
+  border-radius: 50%;
+  animation: poris-tab-spin 0.8s linear infinite;
+}
+
+@keyframes poris-tab-spin {
+  to { transform: rotate(360deg); }
+}
+
 .poris-project-preview-tab,
 .poris-project-code-tab {
   padding: 1em;

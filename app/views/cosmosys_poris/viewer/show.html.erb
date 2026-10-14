@@ -2,6 +2,7 @@
 <%= stylesheet_link_tag 'poris_project.css', plugin: 'cosmosys_poris' %>
 
 <h2><%= l(:label_cosmosys_poris_project_profile) %>: <%= @project.name %></h2>
+
 <% if @issue %>
   <nav class="poris-view-scopes" aria-label="<%= l(:label_cosmosys_poris_view_scopes) %>">
     <% %w[node project node_down].each do |scope| %>
@@ -11,275 +12,80 @@
                   aria: { current: (@scope == scope ? 'page' : nil) } %>
     <% end %>
   </nav>
-<% end %>
-<% if @project_tab && @issue.nil? %>
+  <div class="poris-project-viewer">
+    <div id="porisIssueViewer" data-model-url="<%= @model_url %>"></div>
+  </div>
+<% elsif @project_tab %>
   <% project_tabs = %w[configuration requirements validation constructor automated_validation] %>
-  <div class="tabs poris-project-tabs">
+  <nav class="tabs poris-project-tabs" aria-label="<%= l(:label_cosmosys_poris_project_profile) %>">
     <ul>
       <% project_tabs.each do |tab| %>
-        <li><%= link_to l("label_cosmosys_poris_tab_#{tab}"), project_poris_viewer_path(@project, tab: tab), class: (@project_tab == tab ? 'selected' : nil) %></li>
+        <li>
+          <%= link_to l("label_cosmosys_poris_tab_#{tab}"),
+                      project_poris_viewer_path(@project, tab: tab),
+                      class: ('selected' if @project_tab == tab),
+                      data: { poris_tab_link: true, tab: tab, panel_url: @project_tab_urls.fetch(tab) },
+                      aria: { current: (@project_tab == tab ? 'page' : nil) } %>
+        </li>
       <% end %>
     </ul>
-  </div>
+  </nav>
+  <main id="porisProjectTabContent"
+        class="poris-project-tab-content"
+        data-initial-url="<%= @project_tab_urls.fetch(@project_tab) %>"
+        data-loading-text="<%= l(:text_cosmosys_poris_tab_loading) %>"
+        data-error-text="<%= l(:text_cosmosys_poris_tab_load_failed) %>">
+    <p class="poris-tab-loading" role="status" aria-live="polite"><span class="poris-tab-spinner" aria-hidden="true"></span><%= l(:text_cosmosys_poris_tab_loading) %></p>
+  </main>
 <% end %>
 
-<% if @project_tab == 'configuration' || @issue.present? %>
-<div class="poris-project-layout<%= ' poris-project-layout-with-diagram' if @combined_diagram_url %>">
-  <div class="poris-project-viewer">
-    <div id="porisViewer"></div>
-  </div>
-  <% if @combined_diagram_url %>
-    <aside class="poris-project-diagram">
-      <%= render partial: 'runtime_state' if @runtime_commit_url %>
-      <h3><%= l(:label_cosmosys_project_combined_diagram) %></h3>
-      <%= image_tag @combined_diagram_url, alt: l(:label_cosmosys_project_combined_diagram) %>
-    </aside>
-  <% end %>
-</div>
-<% end %>
-
-<% if @project_preview && @project_tab == 'requirements' %>
-  <section class="poris-project-previews poris-project-preview-tab">
-    <h3><%= l(:label_cosmosys_poris_requirements_preview) %></h3>
-    <p>
-      <%= link_to l(:label_cosmosys_poris_generate_datums), project_poris_datum_preflight_path(@project), class: 'button' %>
-    </p>
-    <div class="wiki"><%= textilizable(@project_preview.requirements_markdown, object: @project, project: @project) %></div>
-    <% if @requirements_plugin_installed %>
-      <button type="button" class="button poris-generation-ack" data-message="<%= l(:text_cosmosys_poris_preview_ack) %>"><%= l(:label_cosmosys_poris_generate_requirements) %></button>
-      <p class="poris-generation-ack-message" role="status" aria-live="polite"></p>
-    <% end %>
-    <p class="help"><%= l(:text_cosmosys_poris_preview_not_saved) %></p>
-  </section>
-<% elsif @project_preview && @project_tab == 'validation' %>
-  <section class="poris-project-previews poris-project-preview-tab">
-    <h3><%= l(:label_cosmosys_poris_validation_preview) %></h3>
-    <p>
-      <%= link_to l(:label_cosmosys_poris_generate_datums), project_poris_datum_preflight_path(@project), class: 'button' %>
-    </p>
-    <div class="wiki cosmosys-poris-validation-preview"><%= textilizable(@project_preview.validation_markdown, object: @project, project: @project) %></div>
-    <% if @validation_plugin_installed %>
-      <button type="button" class="button poris-generation-ack" data-message="<%= l(:text_cosmosys_poris_preview_ack) %>"><%= l(:label_cosmosys_poris_generate_validation) %></button>
-      <p class="poris-generation-ack-message" role="status" aria-live="polite"></p>
-    <% end %>
-    <p class="help"><%= l(:text_cosmosys_poris_preview_not_saved) %></p>
-  </section>
-<% elsif @ruby_code_preview && @project_tab == 'constructor' %>
-  <section class="poris-project-code-tab">
-    <h3><%= l(:label_cosmosys_poris_tab_constructor) %></h3>
-    <pre><code class="language-ruby"><%= @ruby_code_preview.constructor %></code></pre>
-    <p class="help"><%= l(:text_cosmosys_poris_code_preview_limitations) %></p>
-  </section>
-<% elsif @ruby_code_preview && @project_tab == 'automated_validation' %>
-  <div class="poris-project-layout poris-project-layout-with-runtime-sidebar">
-    <section class="poris-project-code-tab">
-      <h3><%= l(:label_cosmosys_poris_tab_automated_validation) %></h3>
-      <div class="poris-validation-runner"
-           data-run-url="<%= run_project_poris_validation_path(@project) %>"
-           data-csrf-token="<%= form_authenticity_token %>"
-           data-passed-label="<%= l(:label_cosmosys_poris_run_passed) %>"
-           data-failed-label="<%= l(:label_cosmosys_poris_run_failed) %>"
-           data-unverified-label="<%= l(:label_cosmosys_poris_run_unverified) %>"
-           data-skipped-label="<%= l(:label_cosmosys_poris_run_skipped) %>"
-           data-running-label="<%= l(:text_cosmosys_poris_run_in_progress) %>">
-        <button type="button" class="button" id="runPorisValidation"><%= l(:label_cosmosys_poris_run_validation) %></button>
-        <p class="poris-validation-runner-status" id="porisValidationRunStatus" role="status" aria-live="polite"></p>
-        <table class="list poris-validation-results" id="porisValidationResults">
-          <thead><tr><th>ID</th><th><%= l(:label_cosmosys_poris_validation_code) %></th><th><%= l(:label_cosmosys_poris_validation_log) %></th><th><%= l(:label_cosmosys_poris_validation_check) %></th></tr></thead>
-          <tbody>
-            <% @ruby_code_preview.validation_steps.each_with_index do |step, index| %>
-              <tr data-step-index="<%= index %>">
-                <td class="poris-validation-id"><%= step[:id] %></td>
-                <td><code># <%= step[:title] %>
-# Stimuli: <%= step[:stimuli] %>
-# Expected result: <%= step[:expected] %>
-<%= step[:code] %>
-<%= step[:assertion_code] %></code></td>
-                <td class="poris-validation-log"></td>
-                <td class="poris-validation-check"></td>
-              </tr>
-            <% end %>
-          </tbody>
-        </table>
-      </div>
-      <p class="help"><%= l(:text_cosmosys_poris_code_preview_limitations) %></p>
-    </section>
-    <aside class="poris-project-runtime-sidebar">
-      <%= render partial: 'runtime_state', locals: { show_operations: false } %>
-    </aside>
-  </div>
-<% end %>
-
-<% if @requirements_plugin_installed && @project_tab.in?(%w[requirements validation]) %>
-  <script>
-    document.querySelectorAll('.poris-generation-ack').forEach((button) => {
-      button.addEventListener('click', () => {
-        const status = document.querySelector('.poris-generation-ack-message');
-        if (status) status.textContent = button.dataset.message;
-      });
-    });
+<% if @issue %>
+  <script type="module">
+    import { createPorisViewerPanel } from '<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>';
+    const root = document.getElementById('porisIssueViewer');
+    if (root) createPorisViewerPanel(root.dataset.modelUrl, root);
   </script>
-<% end %>
-
-<% if @project_tab == 'automated_validation' %>
-  <script>
-    (() => {
-      const runner = document.querySelector('.poris-validation-runner');
-      const button = document.getElementById('runPorisValidation');
-      const status = document.getElementById('porisValidationRunStatus');
-      const table = document.getElementById('porisValidationResults');
-      const body = table?.querySelector('tbody');
-      const runtimePanel = document.getElementById('porisRuntimeState');
-      if (!runner || !button || !status || !table || !body) return;
-
-      const interpolate = (template, values) => template.replace(/%\{(\w+)\}/g, (_, key) => String(values[key] ?? ''));
-      const renderRuntime = (state, operations) => {
-        const nodes = document.getElementById('porisRuntimeNodes');
-      const operationList = document.getElementById('porisRuntimeOperations');
-      if (!runtimePanel || !nodes) return;
-      nodes.replaceChildren();
-      operationList?.replaceChildren();
-        document.getElementById('porisRuntimeEmpty')?.remove();
-        state.forEach((entry) => {
-          const mode = document.createElement('li');
-          mode.textContent = interpolate(runtimePanel.dataset.modeTemplate, { name: entry.name, mode: entry.mode_name });
-          nodes.appendChild(mode);
-          if (entry.value_name) {
-            const value = document.createElement('li');
-            const template = entry.data == null ? runtimePanel.dataset.valueWithoutDataTemplate : runtimePanel.dataset.valueTemplate;
-            value.textContent = interpolate(template, { name: entry.name, value: entry.value_name, data: entry.data });
-            nodes.appendChild(value);
+<% elsif @project_tab %>
+  <script type="module">
+    const interpolate = (template, values) => template.replace(/%\{(\w+)\}/g, (_, key) => String(values[key] ?? ''));
+    window.initPorisConfigurationTab = async (container) => {
+      const root = container.querySelector('#porisViewer');
+      if (!root) return;
+      const { createPorisViewerPanel } = await import('<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>');
+      const initialState = JSON.parse(container.querySelector('.poris-runtime-initial-state')?.textContent || '[]');
+      const runtimePanel = container.querySelector('#porisRuntimeState');
+      const renderRuntimeResult = (result) => {
+        const nodes = runtimePanel?.querySelector('#porisRuntimeNodes');
+        const operations = runtimePanel?.querySelector('#porisRuntimeOperations');
+        if (!nodes || !operations) return;
+        nodes.replaceChildren();
+        operations.replaceChildren();
+        runtimePanel.querySelector('#porisRuntimeEmpty')?.remove();
+        (result.state || []).forEach((row) => {
+          const modeLine = document.createElement('li');
+          modeLine.textContent = interpolate(runtimePanel.dataset.modeTemplate, { name: row.name, mode: row.mode_name });
+          nodes.appendChild(modeLine);
+          if (row.value_name) {
+            const valueLine = document.createElement('li');
+            const template = row.data == null ? runtimePanel.dataset.valueWithoutDataTemplate : runtimePanel.dataset.valueTemplate;
+            valueLine.textContent = interpolate(template, { name: row.name, value: row.value_name, data: row.data });
+            nodes.appendChild(valueLine);
           }
         });
-        operations.forEach((operation) => {
-          if (!operationList) return;
+        (result.operations || []).forEach((operation) => {
           const line = document.createElement('li');
           line.textContent = operation.accepted ? operation.call : `${operation.call} — ${runtimePanel.dataset.rejectedLabel}: ${operation.reason}`;
-          operationList.appendChild(line);
+          operations.appendChild(line);
         });
-      };
-      const appendResult = (result, operations = []) => {
-        const row = body.querySelector(`[data-step-index="${result.index}"]`);
-        if (!row) return;
-        const log = row.querySelector('.poris-validation-log');
-        const indicator = row.querySelector('.poris-validation-check');
-        const passed = result.status === 'passed';
-        const failed = result.status === 'failed';
-        const unverified = result.status === 'unverified';
-        row.classList.remove('poris-validation-row-failed', 'poris-validation-row-unverified');
-        if (failed || unverified) row.classList.add(`poris-validation-row-${result.status}`);
-        log.replaceChildren();
-        operations.forEach((operation) => {
-          const line = document.createElement('div');
-          const detail = operation.accepted ? (operation.result || 'accepted') : `${runner.dataset.failedLabel}: ${operation.reason}`;
-          line.textContent = `${operation.call} → ${detail}`;
-          log.appendChild(line);
-        });
-        if (unverified && result.query_reason) {
-          const reason = document.createElement('div');
-          reason.textContent = `${result.query_description || 'Query'} — ${result.query_expected || ''}: ${result.query_reason}`;
-          log.appendChild(reason);
-        } else if (result.query_description) {
-          const queryResult = document.createElement('div');
-          queryResult.textContent = `Query: ${result.query_description} → ${result.query_expected} (${result.query_result ? 'true' : 'false'})`;
-          log.appendChild(queryResult);
-        }
-        indicator.className = `poris-validation-result-${result.status}`;
-        indicator.textContent = passed ? '✓' : (failed ? '✗' : (unverified ? '?' : '—'));
-        indicator.setAttribute('aria-label', passed ? runner.dataset.passedLabel : (failed ? runner.dataset.failedLabel : (unverified ? runner.dataset.unverifiedLabel : runner.dataset.skippedLabel)));
       };
 
-      button.addEventListener('click', async () => {
-        button.disabled = true;
-        status.textContent = runner.dataset.runningLabel;
-        body.querySelectorAll('tr').forEach((row) => {
-          row.classList.remove('poris-validation-row-failed', 'poris-validation-row-unverified');
-          const log = row.querySelector('.poris-validation-log');
-          const check = row.querySelector('.poris-validation-check');
-          log.replaceChildren();
-          check.className = 'poris-validation-check';
-          check.textContent = '';
-          check.removeAttribute('aria-label');
-        });
-        const operationLog = [];
-        let hadUnverifiedStep = false;
-        const runStep = async (stepIndex) => {
-          const startedAt = Date.now();
-          try {
-            const response = await fetch(runner.dataset.runUrl, {
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': runner.dataset.csrfToken
-              },
-              body: JSON.stringify({ step_index: stepIndex })
-            });
-            const payload = await response.json();
-            if (!response.ok) throw new Error(payload.error || response.statusText);
-            appendResult({ ...payload.result, query_reason: payload.query_reason, query_description: payload.query_description, query_expected: payload.query_expected, query_result: payload.query_result }, payload.operations);
-            operationLog.push(...payload.operations);
-            renderRuntime(payload.state, operationLog);
-            payload.skipped.forEach((result) => appendResult(result));
-            if (payload.result.status === 'unverified') hadUnverifiedStep = true;
-            if (payload.result.status === 'failed') {
-              status.textContent = runner.dataset.failedLabel;
-              button.disabled = false;
-            } else if (payload.complete) {
-              status.textContent = hadUnverifiedStep ? runner.dataset.unverifiedLabel : runner.dataset.passedLabel;
-              button.disabled = false;
-            } else {
-              const remainingDelay = Math.max(0, 500 - (Date.now() - startedAt));
-              window.setTimeout(() => runStep(stepIndex + 1), remainingDelay);
-            }
-          } catch (error) {
-            status.textContent = error.message;
-            button.disabled = false;
-          }
-        };
-        runStep(0);
+      createPorisViewerPanel(root.dataset.modelUrl, root, {
+        commitUrl: root.dataset.commitUrl,
+        csrfToken: root.dataset.csrfToken,
+        initialState,
+        onCommit: renderRuntimeResult
       });
-    })();
+    };
   </script>
 <% end %>
-
-<% if @project_tab == 'configuration' || @issue.present? %>
-<script type="module">
-  import { createPorisViewerPanel } from '<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>';
-  const initialState = <%= raw json_escape(Array(@runtime_state).to_json) %>;
-  const modelXml = <%= raw json_escape(@model_xml.to_json) %>;
-  const runtimePanel = document.getElementById('porisRuntimeState');
-  const interpolate = (template, values) => template.replace(/%\{(\w+)\}/g, (_, key) => String(values[key] ?? ''));
-  const renderRuntimeResult = (result) => {
-    const nodes = document.getElementById('porisRuntimeNodes');
-    const operations = document.getElementById('porisRuntimeOperations');
-    if (!nodes || !operations) return;
-    nodes.replaceChildren();
-    operations.replaceChildren();
-    document.getElementById('porisRuntimeEmpty')?.remove();
-    (result.state || []).forEach((row) => {
-      const modeLine = document.createElement('li');
-      modeLine.textContent = interpolate(runtimePanel.dataset.modeTemplate, { name: row.name, mode: row.mode_name });
-      nodes.appendChild(modeLine);
-      if (row.value_name) {
-        const valueLine = document.createElement('li');
-        const template = row.data == null ? runtimePanel.dataset.valueWithoutDataTemplate : runtimePanel.dataset.valueTemplate;
-        valueLine.textContent = interpolate(template, { name: row.name, value: row.value_name, data: row.data });
-        nodes.appendChild(valueLine);
-      }
-    });
-    (result.operations || []).forEach((operation) => {
-      const line = document.createElement('li');
-      line.textContent = operation.accepted ? operation.call : `${operation.call} — ${runtimePanel.dataset.rejectedLabel}: ${operation.reason}`;
-      operations.appendChild(line);
-    });
-  };
-  createPorisViewerPanel('<%= j @model_url %>', '#porisViewer', {
-    modelXml,
-    commitUrl: '<%= j(@runtime_commit_url.to_s) %>',
-    csrfToken: document.querySelector('meta[name="csrf-token"]')?.content || '',
-    initialState,
-    onCommit: renderRuntimeResult
-  });
-</script>
-<% end %>
+<%= javascript_include_tag 'project_tabs.js', plugin: 'cosmosys_poris' if @project_tab %>

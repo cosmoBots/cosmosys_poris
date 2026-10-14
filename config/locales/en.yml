@@ -25,6 +25,8 @@ en:
   label_cosmosys_poris_tab_validation: Validation plan
   label_cosmosys_poris_tab_constructor: Ruby constructor
   label_cosmosys_poris_tab_automated_validation: Automated validation commands
+  text_cosmosys_poris_tab_loading: Loading this PORIS view…
+  text_cosmosys_poris_tab_load_failed: Could not load this PORIS view. Please try again.
   text_cosmosys_poris_code_preview_limitations: This is a Ruby-oriented preview. Command registration is marked as a TODO because the installed Ruby PORIS core has no PORISCmd API yet.
   label_cosmosys_poris_run_validation: Run validation plan
   label_cosmosys_poris_run_passed: Passed

@@ -1,0 +1,37 @@
+<div class="poris-project-layout poris-project-layout-with-runtime-sidebar">
+  <section class="poris-project-code-tab">
+    <h3><%= l(:label_cosmosys_poris_tab_automated_validation) %></h3>
+    <div class="poris-validation-runner"
+         data-run-url="<%= run_project_poris_validation_path(@project) %>"
+         data-csrf-token="<%= form_authenticity_token %>"
+         data-passed-label="<%= l(:label_cosmosys_poris_run_passed) %>"
+         data-failed-label="<%= l(:label_cosmosys_poris_run_failed) %>"
+         data-unverified-label="<%= l(:label_cosmosys_poris_run_unverified) %>"
+         data-skipped-label="<%= l(:label_cosmosys_poris_run_skipped) %>"
+         data-running-label="<%= l(:text_cosmosys_poris_run_in_progress) %>">
+      <button type="button" class="button" id="runPorisValidation"><%= l(:label_cosmosys_poris_run_validation) %></button>
+      <p class="poris-validation-runner-status" id="porisValidationRunStatus" role="status" aria-live="polite"></p>
+      <table class="list poris-validation-results" id="porisValidationResults">
+        <thead><tr><th>ID</th><th><%= l(:label_cosmosys_poris_validation_code) %></th><th><%= l(:label_cosmosys_poris_validation_log) %></th><th><%= l(:label_cosmosys_poris_validation_check) %></th></tr></thead>
+        <tbody>
+          <% @ruby_code_preview.validation_steps.each_with_index do |step, index| %>
+            <tr data-step-index="<%= index %>">
+              <td class="poris-validation-id"><%= step[:id] %></td>
+              <td><code># <%= step[:title] %>
+# Stimuli: <%= step[:stimuli] %>
+# Expected result: <%= step[:expected] %>
+<%= step[:code] %>
+<%= step[:assertion_code] %></code></td>
+              <td class="poris-validation-log"></td>
+              <td class="poris-validation-check"></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <p class="help"><%= l(:text_cosmosys_poris_code_preview_limitations) %></p>
+  </section>
+  <aside class="poris-project-runtime-sidebar">
+    <%= render partial: 'cosmosys_poris/viewer/runtime_state', locals: { show_operations: false } %>
+  </aside>
+</div>
