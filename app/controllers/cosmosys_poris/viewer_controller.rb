@@ -156,7 +156,7 @@ module CosmosysPoris
     def prepare_project_tab(tab)
       case tab
       when 'configuration'
-        @model_url = project_poris_model_path(@project, format: :xml, scope: 'project')
+        @model_xml = ModelXmlExporter.new(@project, user: User.current, scope: 'project').render
         @runtime_state = hydrated_runtime_state
         @runtime_commit_url = commit_project_poris_state_path(@project)
         @combined_diagram_url = cosmosys_diagram_export_path(

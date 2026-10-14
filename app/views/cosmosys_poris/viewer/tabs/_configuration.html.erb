@@ -1,9 +1,9 @@
 <div class="poris-project-layout poris-project-layout-with-diagram">
   <section class="poris-project-viewer">
     <div id="porisViewer"
-         data-model-url="<%= @model_url %>"
          data-commit-url="<%= @runtime_commit_url %>"
          data-csrf-token="<%= form_authenticity_token %>"></div>
+    <script type="application/json" class="poris-project-model-xml"><%= raw json_escape(@model_xml.to_json) %></script>
     <script type="application/json" class="poris-runtime-initial-state"><%= raw json_escape(Array(@runtime_state).to_json) %></script>
   </section>
   <aside class="poris-project-diagram">

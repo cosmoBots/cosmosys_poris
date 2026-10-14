@@ -52,6 +52,7 @@
       const root = container.querySelector('#porisViewer');
       if (!root) return;
       const { createPorisViewerPanel } = await import('<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>');
+      const modelXml = JSON.parse(container.querySelector('.poris-project-model-xml')?.textContent || '""');
       const initialState = JSON.parse(container.querySelector('.poris-runtime-initial-state')?.textContent || '[]');
       const runtimePanel = container.querySelector('#porisRuntimeState');
       const renderRuntimeResult = (result) => {
@@ -79,9 +80,10 @@
         });
       };
 
-      createPorisViewerPanel(root.dataset.modelUrl, root, {
+      createPorisViewerPanel('', root, {
         commitUrl: root.dataset.commitUrl,
         csrfToken: root.dataset.csrfToken,
+        modelXml,
         initialState,
         onCommit: renderRuntimeResult
       });
