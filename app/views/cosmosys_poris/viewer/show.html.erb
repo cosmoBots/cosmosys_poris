@@ -247,6 +247,7 @@
 <script type="module">
   import { createPorisViewerPanel } from '<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>';
   const initialState = <%= raw json_escape(Array(@runtime_state).to_json) %>;
+  const modelXml = <%= raw json_escape(@model_xml.to_json) %>;
   const runtimePanel = document.getElementById('porisRuntimeState');
   const interpolate = (template, values) => template.replace(/%\{(\w+)\}/g, (_, key) => String(values[key] ?? ''));
   const renderRuntimeResult = (result) => {
@@ -274,6 +275,7 @@
     });
   };
   createPorisViewerPanel('<%= j @model_url %>', '#porisViewer', {
+    modelXml,
     commitUrl: '<%= j(@runtime_commit_url.to_s) %>',
     csrfToken: document.querySelector('meta[name="csrf-token"]')?.content || '',
     initialState,

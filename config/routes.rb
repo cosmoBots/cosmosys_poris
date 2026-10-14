@@ -4,6 +4,9 @@ get 'projects/:project_id/poris',
 get 'projects/:project_id/poris/model',
     to: 'cosmosys_poris/viewer#model',
     as: 'project_poris_model'
+get 'projects/:project_id/poris/panel',
+    to: 'cosmosys_poris/viewer#panel',
+    as: 'project_poris_panel'
 post 'projects/:project_id/poris/commit',
      to: 'cosmosys_poris/viewer#commit',
      as: 'commit_project_poris_state'

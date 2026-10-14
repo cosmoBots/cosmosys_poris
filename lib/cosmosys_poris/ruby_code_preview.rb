@@ -14,7 +14,7 @@ module CosmosysPoris
       @project_preview = project_preview
     end
 
-    def render
+    def render(include_validation: true)
       @items = Issue.visible(@user)
                     .where(project_id: @project.self_and_descendants.select(:id))
                     .includes(:parent)
@@ -26,7 +26,7 @@ module CosmosysPoris
       @targets = OptionRelations.grouped_by_mode(mode_ids).transform_values do |relations|
         relations.filter_map { |relation| @items_by_id[relation.issue_to_id] }
       end
-      steps = validation_steps
+      steps = include_validation ? validation_steps : []
       Result.new(constructor: constructor_code, validation_commands: validation_code(steps), validation_steps: steps)
     end
 

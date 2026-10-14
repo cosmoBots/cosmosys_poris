@@ -1,33 +1,71 @@
 <% if @issue&.cosmosys_poris? && @project&.csys_project_profile == 'poris' %>
-  <% initial_model_url = project_poris_model_path(@project, format: :xml, scope: 'node', issue_id: @issue.id) %>
+  <% scope_panel_urls = %w[node project node_down].to_h do |scope|
+       [scope, project_poris_panel_path(@project, format: :html, scope: scope, issue_id: @issue.id)]
+     end %>
+  <% initial_model_xml = CosmosysPoris::ModelXmlExporter.new(@project, user: User.current, scope: 'node', issue: @issue).render %>
   <%= stylesheet_link_tag 'poris_viewer/style.css', plugin: 'cosmosys_poris' %>
   <div class="box poris-view-scopes">
     <h3><%= l(:label_cosmosys_poris_view_scopes) %></h3>
     <ul>
       <% %w[node project node_down].each do |scope| %>
         <li><%= link_to l("label_cosmosys_poris_scope_#{scope}"),
-                        project_poris_viewer_path(@project, scope: scope, issue_id: @issue.id),
+                        '#',
                         class: 'poris-scope-link',
                         data: {
-                          scope: scope,
-                          model_url: project_poris_model_path(@project, format: :xml, scope: scope, issue_id: @issue.id)
+                          scope: scope
                         },
                         aria: { current: ('page' if scope == 'node') } %></li>
       <% end %>
     </ul>
-    <div id="porisViewerSidebar" class="poris-sidebar-viewer" data-initial-model-url="<%= initial_model_url %>"></div>
+    <div id="porisViewerSidebarPanel" class="poris-sidebar-viewer-panel">
+      <script type="application/json" class="poris-sidebar-model-xml"><%= raw json_escape(initial_model_xml.to_json) %></script>
+      <div class="poris-sidebar-viewer"></div>
+    </div>
+    <div id="porisViewerSidebarError" role="status" hidden></div>
   </div>
+  <script type="application/json" id="porisViewerSidebarPanelUrls"><%= raw json_escape(scope_panel_urls.to_json) %></script>
 
   <script type="module">
     import { createPorisViewerPanel } from '<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>';
 
-    const viewerRoot = document.getElementById('porisViewerSidebar');
+    const urls = JSON.parse(document.getElementById('porisViewerSidebarPanelUrls').textContent);
+    const errorElement = document.getElementById('porisViewerSidebarError');
+    let panel = document.getElementById('porisViewerSidebarPanel');
     let viewerApp;
+    let requestNumber = 0;
 
-    function loadScope(modelUrl) {
-      if (viewerApp) viewerApp.unmount();
-      viewerRoot.replaceChildren();
-      viewerApp = createPorisViewerPanel(modelUrl, viewerRoot, { compact: true });
+    function initializePanel(targetPanel) {
+      const modelXml = JSON.parse(targetPanel.querySelector('.poris-sidebar-model-xml').textContent);
+      const viewerRoot = targetPanel.querySelector('.poris-sidebar-viewer');
+      viewerApp = createPorisViewerPanel('', viewerRoot, { compact: true, modelXml });
+    }
+
+    async function loadScope(scope) {
+      const currentRequest = ++requestNumber;
+      errorElement.hidden = true;
+      try {
+        const response = await fetch(urls[scope], {
+          credentials: 'same-origin',
+          headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!response.ok) throw new Error(`Could not load PORIS panel (${response.status})`);
+
+        const template = document.createElement('template');
+        template.innerHTML = await response.text();
+        const nextPanel = template.content.querySelector('.poris-sidebar-viewer-panel');
+        if (!nextPanel) throw new Error('The PORIS panel response was invalid');
+        if (currentRequest !== requestNumber) return;
+
+        if (viewerApp) viewerApp.unmount();
+        panel.replaceWith(nextPanel);
+        panel = nextPanel;
+        initializePanel(panel);
+      } catch (error) {
+        if (currentRequest === requestNumber) {
+          errorElement.textContent = error.message;
+          errorElement.hidden = false;
+        }
+      }
     }
 
     document.querySelectorAll('.poris-scope-link').forEach((link) => {
@@ -38,10 +76,10 @@
           if (scopeLink === link) scopeLink.setAttribute('aria-current', 'page');
           else scopeLink.removeAttribute('aria-current');
         });
-        loadScope(link.dataset.modelUrl);
+        loadScope(link.dataset.scope);
       });
     });
 
-    loadScope(viewerRoot.dataset.initialModelUrl);
+    initializePanel(panel);
   </script>
 <% end %>

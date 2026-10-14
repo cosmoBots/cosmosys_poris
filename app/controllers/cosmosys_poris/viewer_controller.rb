@@ -14,6 +14,7 @@ module CosmosysPoris
         @runtime_state = hydrated_runtime_state
         @runtime_commit_url = commit_project_poris_state_path(@project)
         response.headers['Cache-Control'] = 'private, no-store'
+        @model_xml = ModelXmlExporter.new(@project, user: User.current, scope: 'project').render if @project_tab == 'configuration'
       end
 
       @combined_diagram_url = cosmosys_diagram_export_path(
@@ -23,12 +24,17 @@ module CosmosysPoris
         combined_layout_mode: 'dot',
         render_variant: 'v1',
         visible_layers_present: 1,
-        visible_layers: %w[blocks precedes]
+        visible_layers: %w[blocks precedes cross_project_boundaries]
       )
       return if @issue
 
-      @project_preview = ProjectSpecPreview.new(@project, user: User.current).render
-      @ruby_code_preview = RubyCodePreview.new(@project, user: User.current, project_preview: @project_preview).render if %w[constructor automated_validation].include?(@project_tab)
+      if %w[requirements validation].include?(@project_tab)
+        @project_preview = ProjectSpecPreview.new(@project, user: User.current).render
+      elsif @project_tab == 'constructor'
+        @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render(include_validation: false)
+      elsif @project_tab == 'automated_validation'
+        @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render
+      end
       @requirements_plugin_installed = Redmine::Plugin.installed?(:cosmosys_req)
       @validation_plugin_installed = Redmine::Plugin.installed?(:cosmosys_val)
     end
@@ -58,6 +64,14 @@ module CosmosysPoris
       response.headers['Cache-Control'] = 'no-store'
       render xml: ModelXmlExporter.new(@project, user: User.current, scope: @scope, issue: @issue).render,
              content_type: 'application/xml'
+    end
+
+    def panel
+      raise ActiveRecord::RecordNotFound unless @issue
+
+      @model_xml = ModelXmlExporter.new(@project, user: User.current, scope: @scope, issue: @issue).render
+      response.headers['Cache-Control'] = 'private, no-store'
+      render partial: 'cosmosys_poris/viewer/sidebar_panel'
     end
 
     def commit
