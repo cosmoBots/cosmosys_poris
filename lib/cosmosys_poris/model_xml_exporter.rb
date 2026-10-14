@@ -134,32 +134,52 @@ module CosmosysPoris
     end
 
     def include_focused_mode(container, mode, visiting)
-      return if visiting[mode.id]
+      include_focused_container_modes(container, [mode], visiting)
+    end
 
-      visiting[mode.id] = true
+    # Keep the focused mode fixed at the top of the preview, but preserve all
+    # modes that each active parent mode makes available below it. Recursing
+    # one target at a time used to overwrite a child's mode list with a single
+    # option, making every descendant selector appear locked.
+    def include_focused_container_modes(container, modes, visiting)
+      modes = modes.reject do |mode|
+        key = [container.id, mode.id]
+        already_visited = visiting[key]
+        visiting[key] = true
+        already_visited
+      end
+      return if modes.empty?
+
       @focused_items[container.id] = container
-      @focused_items[mode.id] = mode
       add_focused_container_commands(container)
+      @focused_container_modes[container.id] = modes.map(&:id)
 
-      targets = focused_block_targets(mode)
-      @focused_mode_destinations[mode.id] = targets.map(&:id)
-      @focused_container_modes[container.id] = [mode.id]
+      child_modes_by_container = Hash.new { |hash, key| hash[key] = [] }
+      modes.each do |mode|
+        @focused_items[mode.id] = mode
+        targets = focused_block_targets(mode)
+        @focused_mode_destinations[mode.id] = targets.map(&:id)
 
-      child_container_ids = []
-      targets.each do |target|
-        @focused_items[target.id] = target
-        next unless target.cosmosys_item_kind_key == 'poris_mode'
+        targets.each do |target|
+          @focused_items[target.id] = target
+          next unless target.cosmosys_item_kind_key == 'poris_mode'
 
-        child_container = @candidate_items_by_id[target.parent_issue_id]
-        next unless child_container&.cosmosys_poris? &&
-                    %w[poris_sys poris_param].include?(child_container.cosmosys_item_kind_key) &&
-                    child_container.parent_issue_id == container.id
+          child_container = @candidate_items_by_id[target.parent_issue_id]
+          next unless child_container&.cosmosys_poris? &&
+                      %w[poris_sys poris_param].include?(child_container.cosmosys_item_kind_key) &&
+                      child_container.parent_issue_id == container.id
 
-        child_container_ids << child_container.id
-        include_focused_mode(child_container, target, visiting)
+          child_modes_by_container[child_container.id] << target
+        end
       end
 
-      @focused_container_destinations[container.id] = [mode.id, *child_container_ids].uniq
+      child_container_ids = child_modes_by_container.keys
+      @focused_container_destinations[container.id] = [*modes.map(&:id), *child_container_ids].uniq
+
+      child_modes_by_container.each do |container_id, child_modes|
+        child_container = @candidate_items_by_id.fetch(container_id)
+        include_focused_container_modes(child_container, child_modes, visiting)
+      end
     end
 
     def include_focused_value(container, value)
