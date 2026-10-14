@@ -157,7 +157,9 @@ los previews y el constructor se calculan en esa petición asíncrona, no al
 renderizar el shell ni para pestañas ocultas. El bundle de porisViewer se carga
 dinámicamente al abrir Configuración. Si al cambiar un modo padre un subnodo
 queda sin modos elegibles, pasa a `Unknown`, sus valores se limpian y desaparece
-del formulario inmediatamente.
+del formulario inmediatamente. La visibilidad se deriva de los destinos del
+modo activo, para que una lista de modos elegibles obsoleta no mantenga el
+subnodo visible.
 
 La pestaña de código produce una vista del constructor Ruby con accesos
 `sys<Name>`, `pr<Name>`, `md<Param>Mode_<Mode>` y `vl<Param>_<Value>`.
