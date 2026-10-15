@@ -5,7 +5,7 @@ module CosmosysPoris
     before_action :load_poris_view_context
 
     def show
-      @model_url = project_poris_model_path(@project, format: :xml, scope: @scope, issue_id: @issue&.id)
+      @model_url = project_poris_model_path(@project, scope: @scope, issue_id: @issue&.id)
       return unless @scope == 'project'
 
       @combined_diagram_url = cosmosys_diagram_export_path(
