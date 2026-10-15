@@ -8,7 +8,7 @@ Redmine::Plugin.register :cosmosys_poris do
   url 'https://cosmobots.eu'
   author_url 'https://cosmobots.eu'
 
-  requires_redmine_plugin :cosmosys, version_or_higher: '0.1.8'
+  requires_redmine_plugin :cosmosys, version_or_higher: '0.1.9'
 
   permission :view_poris_model,
              { 'cosmosys_poris/viewer' => %i[show model panel tab issue_preview issue_sidebar commit run_validation datum_preflight generate_datums] },
