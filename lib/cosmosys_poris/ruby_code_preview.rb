@@ -14,7 +14,7 @@ module CosmosysPoris
       @project_preview = project_preview
     end
 
-    def render(include_validation: true)
+    def render(include_validation: true, include_code: true)
       @items = Issue.visible(@user)
                     .where(project_id: @project.self_and_descendants.select(:id))
                     .includes(:parent)
@@ -27,7 +27,8 @@ module CosmosysPoris
         relations.filter_map { |relation| @items_by_id[relation.issue_to_id] }
       end
       steps = include_validation ? validation_steps : []
-      Result.new(constructor: constructor_code, validation_commands: validation_code(steps), validation_steps: steps)
+      Result.new(constructor: include_code ? constructor_code : nil,
+                 validation_commands: include_code ? validation_code(steps) : nil, validation_steps: steps)
     end
 
     # Evaluates the same structured query that validation_code renders as Ruby.

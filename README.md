@@ -172,7 +172,8 @@ La pestaña de código produce una vista del constructor Ruby con accesos
 Las llamadas generadas pasan las referencias a modos y valores mediante esos
 accesores, no mediante sus nombres como cadenas.
 `Run`, en la pestaña de comandos de validación, ejecuta secuencialmente cada
-estímulo contra el runtime PORIS de la sesión, a razón de dos pasos por segundo;
+estímulo contra el runtime PORIS de la sesión, con un intervalo mínimo de 500 ms
+entre peticiones (esperando siempre la respuesta anterior);
 consulta el resultado esperado tras cada acción y muestra el resultado en una
 columna a la derecha. Tanto el código Ruby generado como `Run` consumen el
 misma secuencia estructurada de pasos que genera el plan del proyecto, incluidos
@@ -186,7 +187,15 @@ presenta en un sidebar y se actualiza en cada paso. El recorrido se detiene ante
 primer fallo y marca el resto de pasos como no ejecutados. El estado final se
 conserva en la sesión y aparece al volver a Configuración. Esta ejecución
 comprueba el contrato del runtime Ruby ligero del plugin; no invoca
-hardware ni persiste estado en la base de datos. El constructor
+hardware ni persiste estado en la base de datos.
+El primer paso prepara y simula el plan una sola vez, sin generar el código
+Ruby de presentación. Los siguientes recuperan los pasos de `Rails.cache`
+(caducidad de dos horas); la sesión sólo conserva el identificador aleatorio y
+el índice esperado. La caché debe estar disponible entre las peticiones de una
+misma ejecución. Cada paso verifica la huella del modelo visible, sus relaciones
+y trackers; si cambia, desaparece la caché o llega una petición de otra ejecución,
+responde 409 y pide reiniciar Run. El runtime de ejecución sigue reconstruyéndose
+por petición, igual que en Commit. El constructor
 marca como pendiente el registro de comandos porque el núcleo `rbPORIS` de
 referencia aún no define `PORISCmd`.
 
@@ -312,3 +321,9 @@ Redmine.
 Licencia: GNU GPL v3, coherente con cosmoSys (consulta [`LICENSE`](LICENSE)).
 
 Contacto: [cosmosys@elporis.com](mailto:cosmosys@elporis.com).
+
+El estado runtime de cada sesión se conserva en `Rails.cache`, aislado por
+usuario y token aleatorio, durante 24 horas desde la última escritura. La cookie
+sólo contiene el token. Las sesiones antiguas se migran al visitar cualquier
+página para evitar `CookieOverflow`, incluso al crear snapshots o reconstruir
+árboles. La pérdida o caducidad de la caché devuelve el runtime al estado inicial.

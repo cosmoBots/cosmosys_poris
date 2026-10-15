@@ -108,20 +108,24 @@ module CosmosysPoris
     def run_validation
       raise ActiveRecord::RecordNotFound unless @scope == 'project' && @issue.nil?
 
-      generator = RubyCodePreview.new(@project, user: User.current)
-      preview = generator.render
-      steps = preview.validation_steps
       step_index = Integer(params.require(:step_index))
-      raise ActionController::BadRequest, 'Validation step index is out of range' unless step_index.between?(0, steps.length - 1)
-
       progress = session[:cosmosys_poris_validation_progress] ||= {}
       project_key = @project.id.to_s
-      expected_index = progress[project_key].to_i
+      plans = ValidationRunPlan.new(@project, user: User.current)
       if step_index.zero?
-        progress[project_key] = 0
-      elsif step_index != expected_index
-        return render json: { error: 'Validation steps must run in order' }, status: :conflict
+        plans.delete(progress[project_key]['id']) if progress[project_key].is_a?(Hash)
+        run_id, steps = plans.start
+        progress[project_key] = { 'id' => run_id, 'next' => 0 }
+      else
+        run = progress[project_key]
+        unless run.is_a?(Hash) && run['id'] == params[:run_id] && run['next'] == step_index
+          return render json: { error: 'Validation steps must run in order. Restart Run.' }, status: :conflict
+        end
+        run_id = run.fetch('id')
+        steps = plans.fetch(run_id)
       end
+      raise ActionController::BadRequest, 'Validation step index is out of range' unless step_index.between?(0, steps.length - 1)
+      generator = RubyCodePreview.new(@project, user: User.current)
 
       runtime = RuntimeModel.new(@project, user: User.current)
       saved_state = runtime_session_state
@@ -146,7 +150,7 @@ module CosmosysPoris
       result_row = { index: step_index, id: step[:id], title: step[:title], status: status }
       complete = status == 'failed' || step_index == steps.length - 1
       if %w[passed unverified].include?(status)
-        progress[project_key] = step_index + 1
+        progress[project_key]['next'] = step_index + 1
       else
         progress.delete(project_key)
       end
@@ -154,9 +158,11 @@ module CosmosysPoris
         { index: step_index + offset + 1, id: remaining[:id], title: remaining[:title], status: 'skipped' }
       end : []
 
+      plans.delete(run_id) if complete
       save_runtime_session_state(runtime.state)
       response.headers['Cache-Control'] = 'no-store'
       render json: {
+        run_id: run_id,
         result: result_row,
         skipped: skipped,
         complete: complete,
@@ -169,6 +175,8 @@ module CosmosysPoris
         operations: operations,
         state: runtime.state
       }
+    rescue ValidationRunPlan::Expired => error
+      render json: { error: error.message }, status: :conflict
     rescue ActionController::ParameterMissing, ArgumentError, TypeError => error
       render json: { error: error.message }, status: :unprocessable_entity
     end
@@ -231,7 +239,7 @@ module CosmosysPoris
     end
 
     def runtime_session_state
-      states = session[:cosmosys_poris_runtime_state]
+      states = RuntimeSessionStore.new(session, user: User.current).read
       states.is_a?(Hash) ? states[@project.id.to_s] || [] : []
     end
 
@@ -245,11 +253,12 @@ module CosmosysPoris
     end
 
     def save_runtime_session_state(state)
-      all_states = session[:cosmosys_poris_runtime_state] || {}
+      store = RuntimeSessionStore.new(session, user: User.current)
+      all_states = store.read
       all_states[@project.id.to_s] = Array(state).map do |row|
         row.slice('node_id', 'mode_id', 'value_id', 'data').compact
       end
-      session[:cosmosys_poris_runtime_state] = all_states
+      store.write(all_states)
     end
 
     def explicit_operations

@@ -38,5 +38,16 @@ require_dependency File.expand_path('lib/cosmosys_poris/runtime_model', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/spec_preview', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/project_spec_preview', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/ruby_code_preview', __dir__)
+require_dependency File.expand_path('lib/cosmosys_poris/validation_run_plan', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/project_datum_generator', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/hooks', __dir__)
+
+require_dependency 'application_controller'
+require_dependency File.expand_path('lib/cosmosys_poris/runtime_session_store', __dir__)
+migrate_poris_sessions = proc do
+  unless ApplicationController < CosmosysPoris::RuntimeSessionMigration
+    ApplicationController.include CosmosysPoris::RuntimeSessionMigration
+  end
+end
+migrate_poris_sessions.call
+Rails.application.config.to_prepare(&migrate_poris_sessions)

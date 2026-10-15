@@ -83,6 +83,7 @@
       });
 
       var operationLog = [];
+      var runId = null;
       var hadUnverifiedStep = false;
       function runStep(stepIndex) {
         var startedAt = Date.now();
@@ -90,13 +91,14 @@
           method: 'POST',
           credentials: 'same-origin',
           headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-Token': runner.dataset.csrfToken },
-          body: JSON.stringify({ step_index: stepIndex })
+          body: JSON.stringify({ step_index: stepIndex, run_id: runId })
         }).then(function(response) {
           return response.json().then(function(payload) {
             if (!response.ok) throw new Error(payload.error || response.statusText);
             return payload;
           });
         }).then(function(payload) {
+          runId = payload.run_id;
           var result = Object.assign({}, payload.result, {
             query_reason: payload.query_reason,
             query_description: payload.query_description,
