@@ -62,6 +62,28 @@ module CosmosysPoris
       render partial: 'cosmosys_poris/viewer/sidebar_panel'
     end
 
+    def issue_preview
+      raise ActiveRecord::RecordNotFound unless @issue
+
+      preview = SpecPreview.new(@issue, user: User.current).render
+      @preview_markdown = params[:section] == 'requirements' ? preview.requirements_markdown : preview.validation_markdown
+      @preview_section = params[:section]
+      response.headers['Cache-Control'] = 'private, no-store'
+      render partial: 'cosmosys_poris/viewer/issue_preview'
+    end
+
+    def issue_sidebar
+      raise ActiveRecord::RecordNotFound unless @issue && @project.csys_project_profile == 'poris'
+
+      @model_xml = ModelXmlExporter.new(@project, user: User.current, scope: 'node', issue: @issue).render
+      @sidebar_scope_urls = %w[node project node_down].to_h do |scope|
+        [scope, project_poris_panel_path(@project, format: :html, scope: scope, issue_id: @issue.id)]
+      end
+      @viewer_module_url = view_context.asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js')
+      response.headers['Cache-Control'] = 'private, no-store'
+      render partial: 'cosmosys_poris/viewer/issue_sidebar'
+    end
+
     def commit
       raise ActiveRecord::RecordNotFound unless @scope == 'project' && @issue.nil?
 

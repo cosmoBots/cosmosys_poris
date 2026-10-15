@@ -7,6 +7,13 @@ get 'projects/:project_id/poris/model',
 get 'projects/:project_id/poris/panel',
     to: 'cosmosys_poris/viewer#panel',
     as: 'project_poris_panel'
+get 'projects/:project_id/poris/issue-preview/:section',
+    to: 'cosmosys_poris/viewer#issue_preview',
+    as: 'project_poris_issue_preview',
+    constraints: { section: /requirements|validation/ }
+get 'projects/:project_id/poris/issue-sidebar/:issue_id',
+    to: 'cosmosys_poris/viewer#issue_sidebar',
+    as: 'project_poris_issue_sidebar'
 get 'projects/:project_id/poris/tabs/:tab',
     to: 'cosmosys_poris/viewer#tab',
     as: 'project_poris_tab',

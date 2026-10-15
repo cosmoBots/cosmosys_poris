@@ -1,4 +1,5 @@
 es:
+  label_cosmosys_poris_viewer: Visor PORIS
   label_cosmosys_poris_project_profile: Modelo PORIS
   text_cosmosys_poris_project_profile: Perfil de proyecto para sistemas, parámetros, modos, valores y comandos PORIS.
   text_cosmosys_poris_item_profile: Elemento del modelo PORIS. La contención jerárquica es distinta de las relaciones de habilitación entre modos y valores.
@@ -11,7 +12,7 @@ es:
   label_cosmosys_poris_generated_preview: Vistas previas de especificación generada (experimental)
   label_cosmosys_poris_requirements_preview: Vista previa de requisitos
   label_cosmosys_poris_validation_preview: Vista previa del plan de validación
-  text_cosmosys_poris_preview_not_saved: Estas vistas previas se generan al consultar el ítem y no se guardan.
+  text_cosmosys_poris_preview_not_saved: Estas vistas previas se generan cuando se solicitan y no se guardan.
   label_cosmosys_poris_enum: Enumerado (opción discreta)
   label_cosmosys_poris_float: Valor flotante
   label_cosmosys_poris_text: Valor de texto
