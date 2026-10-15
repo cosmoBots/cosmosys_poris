@@ -311,4 +311,4 @@ Redmine.
 
 Licencia: GNU GPL v3, coherente con cosmoSys (consulta [`LICENSE`](LICENSE)).
 
-Contacto: [txinto@elporis.com](mailto:txinto@elporis.com).
+Contacto: [cosmosys@elporis.com](mailto:cosmosys@elporis.com).
