@@ -86,7 +86,7 @@ module CosmosysPoris
             else
               @project.self_and_descendants.pluck(:id)
             end
-      Project.visible(@user).where(id: ids).order(:lft, :id).to_a
+      ::Project.visible(@user).where(id: ids).order(:lft, :id).to_a
     end
 
     def select_scoped_items(candidates)
