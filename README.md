@@ -55,7 +55,11 @@ y perfiles durante la carga del plugin.
 
 La primera visualización con porisViewer ya está disponible en el menú PORIS y
 en `/projects/:identifier/poris`. Consume un XML generado desde el modelo de
-Redmine. En el alcance de proyecto, `Commit` envía la configuración actual al
+Redmine. La formación del universo visible del XML usa
+`Cosmosys::ViewAudienceSelector`; `CosmosysPoris::ModelSelector` aplica después
+las reglas específicas del árbol PORIS (modos activados, valores y comandos).
+El exportador XML serializa ese resultado y conserva la estructura del contrato
+actual. En el alcance de proyecto, `Commit` envía la configuración actual al
 runtime Ruby PORIS, y muestra tanto el estado efectivo de cada sistema y
 parámetro como las llamadas `setMode`/`setValue` realizadas. Los botones de
 `prCmd` envían en esa misma secuencia el estado actual y una operación
