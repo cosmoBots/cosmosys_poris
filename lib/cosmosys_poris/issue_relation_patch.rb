@@ -9,11 +9,16 @@ module CosmosysPoris
     private
 
     def cosmosys_poris_validate_blocking_relation
-      return unless relation_type == 'blocks'
+      return unless %w[blocks precedes].include?(relation_type)
 
       source = issue_from
       target = issue_to
       return unless source&.cosmosys_poris? || target&.cosmosys_poris?
+
+      if relation_type == 'blocks'
+        errors.add(:relation_type, :invalid)
+        return
+      end
 
       valid_source = source&.cosmosys_item_kind_key == 'poris_mode'
       valid_target = %w[poris_mode poris_value].include?(target&.cosmosys_item_kind_key)

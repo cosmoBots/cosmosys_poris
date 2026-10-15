@@ -40,6 +40,13 @@
         var trackerId = tracker ? tracker.value : '';
         var isPoris = porisTrackerIds.indexOf(trackerId) !== -1;
         var isValue = valueTrackerIds.indexOf(trackerId) !== -1;
+        ['#issue_start_date', '#issue_due_date'].forEach(function(selector) {
+          var dateInput = document.querySelector(selector);
+          if (!dateInput) return;
+          var dateField = dateInput.closest('p') || dateInput.parentElement;
+          if (dateField) dateField.hidden = isPoris;
+          dateInput.disabled = isPoris;
+        });
         fieldset.hidden = !isPoris;
         fieldset.disabled = !isPoris;
         valueFields.hidden = !isValue;

@@ -1,0 +1,10 @@
+<section class="poris-project-previews poris-project-preview-tab">
+  <h3><%= l(:label_cosmosys_poris_validation_preview) %></h3>
+  <p><%= link_to l(:label_cosmosys_poris_generate_datums), project_poris_datum_preflight_path(@project), class: 'button' %></p>
+  <div class="wiki cosmosys-poris-validation-preview"><%= textilizable(@project_preview.validation_markdown, object: @project, project: @project) %></div>
+  <% if @validation_plugin_installed %>
+    <button type="button" class="button poris-generation-ack" data-message="<%= l(:text_cosmosys_poris_preview_ack) %>"><%= l(:label_cosmosys_poris_generate_validation) %></button>
+    <p class="poris-generation-ack-message" role="status" aria-live="polite"></p>
+  <% end %>
+  <p class="help"><%= l(:text_cosmosys_poris_preview_not_saved) %></p>
+</section>

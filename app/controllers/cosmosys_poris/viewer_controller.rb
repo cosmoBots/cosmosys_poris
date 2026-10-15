@@ -1,22 +1,51 @@
 module CosmosysPoris
   class ViewerController < ApplicationController
+    PROJECT_TABS = %w[configuration requirements validation constructor automated_validation].freeze
+
     before_action :find_project_by_project_id
     before_action :authorize
     before_action :load_poris_view_context
 
     def show
       @model_url = project_poris_model_path(@project, format: :xml, scope: @scope, issue_id: @issue&.id)
-      return unless @scope == 'project'
+      return unless @scope == 'project' && @issue.nil?
 
-      @combined_diagram_url = cosmosys_diagram_export_path(
-        project_id: @project.identifier,
-        kind: 'combined',
-        diagram_format: 'svg',
-        combined_layout_mode: 'dot',
-        render_variant: 'v1',
-        visible_layers_present: 1,
-        visible_layers: %w[blocks precedes]
-      )
+      @project_tab = PROJECT_TABS.include?(params[:tab]) ? params[:tab] : 'configuration'
+      @project_tab_urls = PROJECT_TABS.to_h do |tab|
+        [tab, project_poris_tab_path(@project, tab: tab)]
+      end
+      response.headers['Cache-Control'] = 'private, no-store'
+    end
+
+    def tab
+      raise ActiveRecord::RecordNotFound unless @scope == 'project' && @issue.nil?
+      raise ActiveRecord::RecordNotFound unless PROJECT_TABS.include?(params[:tab])
+
+      @project_tab = params[:tab]
+      prepare_project_tab(@project_tab)
+      response.headers['Cache-Control'] = 'private, no-store'
+      render partial: "cosmosys_poris/viewer/tabs/#{@project_tab}"
+    end
+
+    def datum_preflight
+      load_datum_targets
+      @project_preview = ProjectSpecPreview.new(@project, user: User.current).render
+      return if @datum_target_projects.empty?
+
+      @target_project = selected_datum_target
+      @datum_plan = ProjectDatumGenerator.new(@project, user: User.current).plan(target_project: @target_project)
+    end
+
+    def generate_datums
+      load_datum_targets
+      target_project = selected_datum_target
+      result = ProjectDatumGenerator.new(@project, user: User.current).call(target_project: target_project)
+      flash[:notice] = I18n.t('cosmosys_poris.datums.created_notice', created: result.created.length, existing: result.existing.length, project: target_project.name)
+      redirect_to project_poris_viewer_path(@project)
+    rescue ActiveRecord::RecordInvalid => error
+      redirect_to project_poris_datum_preflight_path(@project, target_project_id: params[:target_project_id]), alert: error.record.errors.full_messages.to_sentence
+    rescue ArgumentError => error
+      redirect_to project_poris_datum_preflight_path(@project, target_project_id: params[:target_project_id]), alert: error.message
     end
 
     def model
@@ -25,9 +54,158 @@ module CosmosysPoris
              content_type: 'application/xml'
     end
 
+    def panel
+      raise ActiveRecord::RecordNotFound unless @issue
+
+      @model_xml = ModelXmlExporter.new(@project, user: User.current, scope: @scope, issue: @issue).render
+      response.headers['Cache-Control'] = 'private, no-store'
+      render partial: 'cosmosys_poris/viewer/sidebar_panel'
+    end
+
+    def issue_preview
+      raise ActiveRecord::RecordNotFound unless @issue
+
+      preview = SpecPreview.new(@issue, user: User.current).render
+      @preview_markdown = params[:section] == 'requirements' ? preview.requirements_markdown : preview.validation_markdown
+      @preview_section = params[:section]
+      response.headers['Cache-Control'] = 'private, no-store'
+      render partial: 'cosmosys_poris/viewer/issue_preview'
+    end
+
+    def issue_sidebar
+      raise ActiveRecord::RecordNotFound unless @issue && @project.csys_project_profile == 'poris'
+
+      @model_xml = ModelXmlExporter.new(@project, user: User.current, scope: 'node', issue: @issue).render
+      @sidebar_scope_urls = %w[node project node_down].to_h do |scope|
+        [scope, project_poris_panel_path(@project, format: :html, scope: scope, issue_id: @issue.id)]
+      end
+      @viewer_module_url = view_context.asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js')
+      response.headers['Cache-Control'] = 'private, no-store'
+      render partial: 'cosmosys_poris/viewer/issue_sidebar'
+    end
+
+    def commit
+      raise ActiveRecord::RecordNotFound unless @scope == 'project' && @issue.nil?
+
+      runtime = RuntimeModel.new(@project, user: User.current)
+      saved_state = runtime_session_state
+      runtime.restore(saved_state) if saved_state.any?
+      previous_state = runtime.state
+      operations = if params[:root].present?
+                     runtime.operations_from_snapshot(viewer_snapshot(params[:root]), previous_state: previous_state)
+                   else
+                     []
+                   end
+      operations.concat(explicit_operations) if params[:operations].present?
+      result = runtime.apply(operations)
+      save_runtime_session_state(result.fetch('state'))
+      response.headers['Cache-Control'] = 'no-store'
+      render json: result
+    rescue ActionController::ParameterMissing, ArgumentError, TypeError => error
+      render json: { error: error.message }, status: :unprocessable_entity
+    end
+
+    def run_validation
+      raise ActiveRecord::RecordNotFound unless @scope == 'project' && @issue.nil?
+
+      generator = RubyCodePreview.new(@project, user: User.current)
+      preview = generator.render
+      steps = preview.validation_steps
+      step_index = Integer(params.require(:step_index))
+      raise ActionController::BadRequest, 'Validation step index is out of range' unless step_index.between?(0, steps.length - 1)
+
+      progress = session[:cosmosys_poris_validation_progress] ||= {}
+      project_key = @project.id.to_s
+      expected_index = progress[project_key].to_i
+      if step_index.zero?
+        progress[project_key] = 0
+      elsif step_index != expected_index
+        return render json: { error: 'Validation steps must run in order' }, status: :conflict
+      end
+
+      runtime = RuntimeModel.new(@project, user: User.current)
+      saved_state = runtime_session_state
+      runtime.restore(saved_state) if saved_state.any?
+      step = steps.fetch(step_index)
+      result = if step[:stimulus]
+                 runtime.apply([step[:stimulus]])
+               else
+                 { 'operations' => [], 'state' => runtime.state }
+               end
+      operations = result.fetch('operations')
+      state_after = result.fetch('state')
+      query_result = generator.evaluate_query(step[:query], state_after)
+      status = if query_result.nil?
+                 'unverified'
+               elsif query_result
+                 'passed'
+               else
+                 'failed'
+               end
+      passed = status == 'passed'
+      result_row = { index: step_index, id: step[:id], title: step[:title], status: status }
+      complete = status == 'failed' || step_index == steps.length - 1
+      if %w[passed unverified].include?(status)
+        progress[project_key] = step_index + 1
+      else
+        progress.delete(project_key)
+      end
+      skipped = status == 'failed' ? steps.drop(step_index + 1).each_with_index.map do |remaining, offset|
+        { index: step_index + offset + 1, id: remaining[:id], title: remaining[:title], status: 'skipped' }
+      end : []
+
+      save_runtime_session_state(runtime.state)
+      response.headers['Cache-Control'] = 'no-store'
+      render json: {
+        result: result_row,
+        skipped: skipped,
+        complete: complete,
+        total_steps: steps.length,
+        actual: operations.map { |operation| operation['accepted'] ? 'accepted' : operation['reason'] }.join('; '),
+        query_result: query_result,
+        query_reason: step.dig(:query, 'reason'),
+        query_description: step[:query_description],
+        query_expected: step[:query_expected],
+        operations: operations,
+        state: runtime.state
+      }
+    rescue ActionController::ParameterMissing, ArgumentError, TypeError => error
+      render json: { error: error.message }, status: :unprocessable_entity
+    end
+
     private
 
+    def prepare_project_tab(tab)
+      case tab
+      when 'configuration'
+        @model_xml = ModelXmlExporter.new(@project, user: User.current, scope: 'project').render
+        @runtime_state = hydrated_runtime_state
+        @runtime_commit_url = commit_project_poris_state_path(@project)
+        @combined_diagram_url = cosmosys_diagram_export_path(
+          project_id: @project.identifier,
+          kind: 'combined',
+          diagram_format: 'svg',
+          combined_layout_mode: 'dot',
+          render_variant: 'v1',
+          visible_layers_present: 1,
+          visible_layers: %w[blocks precedes cross_project_boundaries]
+        )
+      when 'requirements', 'validation'
+        @project_preview = ProjectSpecPreview.new(@project, user: User.current).render
+        @requirements_plugin_installed = Redmine::Plugin.installed?(:cosmosys_req)
+        @validation_plugin_installed = Redmine::Plugin.installed?(:cosmosys_val)
+      when 'constructor'
+        @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render(include_validation: false)
+      when 'automated_validation'
+        @runtime_state = hydrated_runtime_state
+        @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render
+      end
+    end
+    private :prepare_project_tab
+
     def load_poris_view_context
+      raise ActiveRecord::RecordNotFound unless @project.csys_project_profile == 'poris'
+
       @scope = params[:scope].presence || (params[:issue_id].present? ? 'node' : 'project')
       @scope = 'project' unless ModelXmlExporter::SCOPES.include?(@scope)
       return if @scope == 'project' && params[:issue_id].blank?
@@ -36,6 +214,59 @@ module CosmosysPoris
                      .where(project_id: @project.id)
                      .find(params[:issue_id])
       raise ActiveRecord::RecordNotFound unless @issue.cosmosys_poris?
+    end
+
+    def load_datum_targets
+      @datum_target_projects = @project.root.self_and_descendants.select do |project|
+        project.visible?(User.current) &&
+          project.trackers.exists?(csys_key: 'cs_datum') &&
+          User.current.allowed_to?(:add_issues, project)
+      end
+    end
+
+    def selected_datum_target
+      default_target = @datum_target_projects.find { |project| project.id == @project.id } || @datum_target_projects.first
+      target_id = params[:target_project_id].presence || default_target&.id
+      @datum_target_projects.find { |project| project.id == target_id.to_i } || raise(ActiveRecord::RecordNotFound)
+    end
+
+    def runtime_session_state
+      states = session[:cosmosys_poris_runtime_state]
+      states.is_a?(Hash) ? states[@project.id.to_s] || [] : []
+    end
+
+    def hydrated_runtime_state
+      saved_state = runtime_session_state
+      return [] if saved_state.empty?
+
+      runtime = RuntimeModel.new(@project, user: User.current)
+      runtime.restore(saved_state)
+      runtime.state
+    end
+
+    def save_runtime_session_state(state)
+      all_states = session[:cosmosys_poris_runtime_state] || {}
+      all_states[@project.id.to_s] = Array(state).map do |row|
+        row.slice('node_id', 'mode_id', 'value_id', 'data').compact
+      end
+      session[:cosmosys_poris_runtime_state] = all_states
+    end
+
+    def explicit_operations
+      Array(params.require(:operations)).map do |operation|
+        operation.permit(:type, :node_id, :mode_id, :value_id, :command_id, :data).to_h
+      end
+    end
+
+    def viewer_snapshot(parameter)
+      raw_input = parameter.respond_to?(:to_unsafe_h) ? parameter.to_unsafe_h : parameter
+      input = raw_input.to_h.stringify_keys
+      {
+        'id' => input['id'],
+        'mode' => input['mode'].is_a?(Hash) ? input['mode'].slice('id', 'name') : nil,
+        'value' => input['value'].is_a?(Hash) ? input['value'].slice('id', 'name', 'type', 'number', 'data') : nil,
+        'subsystems' => Array(input['subsystems']).map { |child| viewer_snapshot(child) }
+      }
     end
   end
 end

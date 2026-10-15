@@ -1,0 +1,10 @@
+<section class="poris-project-previews poris-project-preview-tab">
+  <h3><%= l(:label_cosmosys_poris_requirements_preview) %></h3>
+  <p><%= link_to l(:label_cosmosys_poris_generate_datums), project_poris_datum_preflight_path(@project), class: 'button' %></p>
+  <div class="wiki"><%= textilizable(@project_preview.requirements_markdown, object: @project, project: @project) %></div>
+  <% if @requirements_plugin_installed %>
+    <button type="button" class="button poris-generation-ack" data-message="<%= l(:text_cosmosys_poris_preview_ack) %>"><%= l(:label_cosmosys_poris_generate_requirements) %></button>
+    <p class="poris-generation-ack-message" role="status" aria-live="polite"></p>
+  <% end %>
+  <p class="help"><%= l(:text_cosmosys_poris_preview_not_saved) %></p>
+</section>

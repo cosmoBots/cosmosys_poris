@@ -1,0 +1,14 @@
+<div class="poris-project-layout poris-project-layout-with-diagram">
+  <section class="poris-project-viewer">
+    <div id="porisViewer"
+         data-commit-url="<%= @runtime_commit_url %>"
+         data-csrf-token="<%= form_authenticity_token %>"></div>
+    <script type="application/json" class="poris-project-model-xml"><%= raw json_escape(@model_xml.to_json) %></script>
+    <script type="application/json" class="poris-runtime-initial-state"><%= raw json_escape(Array(@runtime_state).to_json) %></script>
+  </section>
+  <aside class="poris-project-diagram">
+    <%= render partial: 'cosmosys_poris/viewer/runtime_state' %>
+    <h3><%= l(:label_cosmosys_project_combined_diagram) %></h3>
+    <%= image_tag @combined_diagram_url, alt: l(:label_cosmosys_project_combined_diagram), loading: 'lazy' %>
+  </aside>
+</div>

@@ -1,0 +1,6 @@
+<%= stylesheet_link_tag 'poris_project.css', plugin: 'cosmosys_poris' %>
+<section class="box cosmosys-poris-spec-preview">
+  <h3><%= l(@preview_section == 'requirements' ? :label_cosmosys_poris_requirements_preview : :label_cosmosys_poris_validation_preview) %></h3>
+  <div class="wiki <%= 'cosmosys-poris-validation-preview' if @preview_section == 'validation' %>"><%= textilizable(@preview_markdown, object: @issue, project: @issue.project) %></div>
+  <p class="help"><%= l(:text_cosmosys_poris_preview_not_saved) %></p>
+</section>

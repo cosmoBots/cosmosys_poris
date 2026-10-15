@@ -5,9 +5,45 @@
   align-items: start;
 }
 
+.poris-project-layout-with-runtime-sidebar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18em, 26em);
+  gap: 1.5em;
+  align-items: start;
+}
+
+.cosmosys-poris-validation-preview p > span {
+  color: #b42318;
+}
+
 .poris-project-layout-with-diagram .poris-project-diagram {
   min-width: 0;
   overflow: auto;
+}
+
+.poris-runtime-state {
+  margin-bottom: 1.5em;
+  padding: 0.8em 1em;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.poris-runtime-state h3,
+.poris-runtime-state h4 {
+  margin-top: 0.2em;
+}
+
+.poris-runtime-nodes,
+.poris-runtime-operations {
+  margin: 0.5em 0 1em;
+  padding-left: 1.5em;
+}
+
+.poris-runtime-operations li {
+  margin: 0.25em 0;
+  overflow-wrap: anywhere;
+  font-family: monospace;
 }
 
 .poris-project-layout-with-diagram .poris-project-diagram img {
@@ -16,8 +52,112 @@
   height: auto;
 }
 
+.poris-project-tabs {
+  margin-bottom: 1em;
+}
+
+.poris-tab-loading {
+  display: flex;
+  align-items: center;
+  padding: 1em;
+  color: #666;
+}
+
+.poris-tab-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 0.5em;
+  border: 2px solid #c8d1d8;
+  border-top-color: #3e7ca5;
+  border-radius: 50%;
+  animation: poris-tab-spin 0.8s linear infinite;
+}
+
+@keyframes poris-tab-spin {
+  to { transform: rotate(360deg); }
+}
+
+.poris-project-preview-tab,
+.poris-project-code-tab {
+  padding: 1em;
+  border: 1px solid #d7d7d7;
+  background: #fff;
+}
+
+.poris-project-code-tab pre {
+  max-height: 75vh;
+  overflow: auto;
+  padding: 1em;
+  border: 1px solid #ddd;
+  background: #f6f6f6;
+  white-space: pre;
+}
+
+.poris-validation-runner {
+  margin: 0.75em 0 1.25em;
+}
+
+.poris-validation-results td:last-child {
+  width: 5em;
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.poris-validation-results th:first-child,
+.poris-validation-results td:first-child {
+  width: 5.5em;
+  min-width: 5.5em;
+  white-space: nowrap;
+}
+
+.poris-validation-results td.poris-validation-id {
+  vertical-align: top;
+  font-weight: bold;
+}
+
+.poris-validation-results td:nth-child(2),
+.poris-validation-results td:nth-child(3) {
+  text-align: left;
+}
+
+.poris-validation-results code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.poris-project-runtime-sidebar {
+  min-width: 0;
+}
+
+.poris-validation-result-passed {
+  color: #188038;
+}
+
+.poris-validation-result-failed {
+  color: #c5221f;
+}
+
+.poris-validation-result-skipped {
+  color: #777;
+}
+
+.poris-validation-result-unverified {
+  color: #8a6d3b;
+}
+
+.poris-validation-results tr.poris-validation-row-unverified > td {
+  background-color: #fff4ce;
+}
+
+.poris-validation-results tr.poris-validation-row-failed > td {
+  background-color: #fde8e7;
+}
+
 @media screen and (max-width: 1100px) {
-  .poris-project-layout-with-diagram {
+  .poris-project-layout-with-diagram,
+  .poris-project-layout-with-runtime-sidebar {
     grid-template-columns: minmax(0, 1fr);
   }
 }

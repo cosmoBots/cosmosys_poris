@@ -1,0 +1,15 @@
+<%= stylesheet_link_tag 'poris_viewer/style.css', plugin: 'cosmosys_poris' %>
+<div class="box poris-view-scopes" data-cosmosys-poris-sidebar data-viewer-module-url="<%= @viewer_module_url %>">
+  <h3><%= l(:label_cosmosys_poris_view_scopes) %></h3>
+  <ul>
+    <% %w[node project node_down].each do |scope| %>
+      <li><%= link_to l("label_cosmosys_poris_scope_#{scope}"), '#', class: 'poris-scope-link selected', data: { scope: scope }, aria: { current: ('page' if scope == 'node') } %></li>
+    <% end %>
+  </ul>
+  <script type="application/json" class="poris-sidebar-urls"><%= raw json_escape(@sidebar_scope_urls.to_json) %></script>
+  <div class="poris-sidebar-viewer-panel">
+    <script type="application/json" class="poris-sidebar-model-xml"><%= raw json_escape(@model_xml.to_json) %></script>
+    <div class="poris-sidebar-viewer"></div>
+  </div>
+  <div class="poris-sidebar-error" role="status" hidden></div>
+</div>

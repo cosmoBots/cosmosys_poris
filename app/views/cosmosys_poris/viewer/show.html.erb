@@ -2,6 +2,7 @@
 <%= stylesheet_link_tag 'poris_project.css', plugin: 'cosmosys_poris' %>
 
 <h2><%= l(:label_cosmosys_poris_project_profile) %>: <%= @project.name %></h2>
+
 <% if @issue %>
   <nav class="poris-view-scopes" aria-label="<%= l(:label_cosmosys_poris_view_scopes) %>">
     <% %w[node project node_down].each do |scope| %>
@@ -11,20 +12,82 @@
                   aria: { current: (@scope == scope ? 'page' : nil) } %>
     <% end %>
   </nav>
-<% end %>
-<div class="poris-project-layout<%= ' poris-project-layout-with-diagram' if @combined_diagram_url %>">
   <div class="poris-project-viewer">
-    <div id="porisViewer"></div>
+    <div id="porisIssueViewer" data-model-url="<%= @model_url %>"></div>
   </div>
-  <% if @combined_diagram_url %>
-    <aside class="poris-project-diagram">
-      <h3><%= l(:label_cosmosys_project_combined_diagram) %></h3>
-      <%= image_tag @combined_diagram_url, alt: l(:label_cosmosys_project_combined_diagram) %>
-    </aside>
-  <% end %>
-</div>
+<% elsif @project_tab %>
+  <% project_tabs = %w[configuration requirements validation constructor automated_validation] %>
+  <nav class="tabs poris-project-tabs" aria-label="<%= l(:label_cosmosys_poris_project_profile) %>">
+    <ul>
+      <% project_tabs.each do |tab| %>
+        <li>
+          <%= link_to l("label_cosmosys_poris_tab_#{tab}"),
+                      project_poris_viewer_path(@project, tab: tab),
+                      class: ('selected' if @project_tab == tab),
+                      data: { poris_tab_link: true, tab: tab, panel_url: @project_tab_urls.fetch(tab) },
+                      aria: { current: (@project_tab == tab ? 'page' : nil) } %>
+        </li>
+      <% end %>
+    </ul>
+  </nav>
+  <main id="porisProjectTabContent"
+        class="poris-project-tab-content"
+        data-initial-url="<%= @project_tab_urls.fetch(@project_tab) %>"
+        data-loading-text="<%= l(:text_cosmosys_poris_tab_loading) %>"
+        data-error-text="<%= l(:text_cosmosys_poris_tab_load_failed) %>">
+    <p class="poris-tab-loading" role="status" aria-live="polite"><span class="poris-tab-spinner" aria-hidden="true"></span><%= l(:text_cosmosys_poris_tab_loading) %></p>
+  </main>
+<% end %>
 
-<script type="module">
-  import { createPorisViewerPanel } from '<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>';
-  createPorisViewerPanel('<%= j @model_url %>', '#porisViewer');
-</script>
+<% if @issue %>
+  <script type="module">
+    import { createPorisViewerPanel } from '<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>';
+    const root = document.getElementById('porisIssueViewer');
+    if (root) createPorisViewerPanel(root.dataset.modelUrl, root);
+  </script>
+<% elsif @project_tab %>
+  <script type="module">
+    const interpolate = (template, values) => template.replace(/%\{(\w+)\}/g, (_, key) => String(values[key] ?? ''));
+    window.initPorisConfigurationTab = async (container) => {
+      const root = container.querySelector('#porisViewer');
+      if (!root) return;
+      const { createPorisViewerPanel } = await import('<%= asset_path('plugin_assets/cosmosys_poris/poris_viewer/prod.js') %>');
+      const modelXml = JSON.parse(container.querySelector('.poris-project-model-xml')?.textContent || '""');
+      const initialState = JSON.parse(container.querySelector('.poris-runtime-initial-state')?.textContent || '[]');
+      const runtimePanel = container.querySelector('#porisRuntimeState');
+      const renderRuntimeResult = (result) => {
+        const nodes = runtimePanel?.querySelector('#porisRuntimeNodes');
+        const operations = runtimePanel?.querySelector('#porisRuntimeOperations');
+        if (!nodes || !operations) return;
+        nodes.replaceChildren();
+        operations.replaceChildren();
+        runtimePanel.querySelector('#porisRuntimeEmpty')?.remove();
+        (result.state || []).forEach((row) => {
+          const modeLine = document.createElement('li');
+          modeLine.textContent = interpolate(runtimePanel.dataset.modeTemplate, { name: row.name, mode: row.mode_name });
+          nodes.appendChild(modeLine);
+          if (row.value_name) {
+            const valueLine = document.createElement('li');
+            const template = row.data == null ? runtimePanel.dataset.valueWithoutDataTemplate : runtimePanel.dataset.valueTemplate;
+            valueLine.textContent = interpolate(template, { name: row.name, value: row.value_name, data: row.data });
+            nodes.appendChild(valueLine);
+          }
+        });
+        (result.operations || []).forEach((operation) => {
+          const line = document.createElement('li');
+          line.textContent = operation.accepted ? operation.call : `${operation.call} — ${runtimePanel.dataset.rejectedLabel}: ${operation.reason}`;
+          operations.appendChild(line);
+        });
+      };
+
+      createPorisViewerPanel('', root, {
+        commitUrl: root.dataset.commitUrl,
+        csrfToken: root.dataset.csrfToken,
+        modelXml,
+        initialState,
+        onCommit: renderRuntimeResult
+      });
+    };
+  </script>
+<% end %>
+<%= javascript_include_tag 'project_tabs.js', plugin: 'cosmosys_poris' if @project_tab %>

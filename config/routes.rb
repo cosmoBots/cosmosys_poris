@@ -4,3 +4,29 @@ get 'projects/:project_id/poris',
 get 'projects/:project_id/poris/model',
     to: 'cosmosys_poris/viewer#model',
     as: 'project_poris_model'
+get 'projects/:project_id/poris/panel',
+    to: 'cosmosys_poris/viewer#panel',
+    as: 'project_poris_panel'
+get 'projects/:project_id/poris/issue-preview/:section',
+    to: 'cosmosys_poris/viewer#issue_preview',
+    as: 'project_poris_issue_preview',
+    constraints: { section: /requirements|validation/ }
+get 'projects/:project_id/poris/issue-sidebar/:issue_id',
+    to: 'cosmosys_poris/viewer#issue_sidebar',
+    as: 'project_poris_issue_sidebar'
+get 'projects/:project_id/poris/tabs/:tab',
+    to: 'cosmosys_poris/viewer#tab',
+    as: 'project_poris_tab',
+    constraints: { tab: /configuration|requirements|validation|constructor|automated_validation/ }
+post 'projects/:project_id/poris/commit',
+     to: 'cosmosys_poris/viewer#commit',
+     as: 'commit_project_poris_state'
+post 'projects/:project_id/poris/validation/run',
+     to: 'cosmosys_poris/viewer#run_validation',
+     as: 'run_project_poris_validation'
+get 'projects/:project_id/poris/datums',
+    to: 'cosmosys_poris/viewer#datum_preflight',
+    as: 'project_poris_datum_preflight'
+post 'projects/:project_id/poris/datums',
+     to: 'cosmosys_poris/viewer#generate_datums',
+     as: 'generate_project_poris_datums'

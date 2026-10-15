@@ -19,10 +19,14 @@ module CosmosysPoris
     end
 
     def render
-      candidate_items = visible_candidate_items
-      @items = select_scoped_items(candidate_items).index_by(&:id)
+      selection = ModelSelector.new(@project, user: @user, scope: @scope, issue: @issue).select
+      @project_data = selection.project
+      @option_destination_ids = selection.option_destination_ids
+      @focused_container_destinations = selection.focused_container_destinations
+      @focused_container_modes = selection.focused_container_modes
+      @focused_mode_destinations = selection.focused_mode_destinations
+      @items = selection.items.index_by(&:id)
       @children = @items.values.group_by(&:parent_issue_id)
-
       output = ['<poris id="systems">']
       roots = model_roots
       output << synthetic_root_xml if !(roots.one? && %w[poris_sys poris_param].include?(roots.first.cosmosys_item_kind_key))
@@ -33,71 +37,12 @@ module CosmosysPoris
 
     private
 
-    def visible_candidate_items
-      project_ids = scoped_project_ids
-      Issue.visible(@user)
-           .where(project_id: project_ids)
-           .includes(:parent, cosmosys_poris_labels: :label_scope)
-           .to_a
-           .select(&:cosmosys_poris?)
-    end
-
-    def scoped_project_ids
-      case @scope
-      when 'node'
-        [@project.id]
-      when 'node_down'
-        anchor_project = scope_anchor&.project
-        projects = (anchor_project || @project).self_and_descendants
-        (projects.pluck(:id) + [@project.id]).uniq
-      else
-        @project.self_and_descendants
-      end
-    end
-
-    def select_scoped_items(candidates)
-      return candidates if @scope == 'project' || @issue.nil?
-
-      anchor = scope_anchor
-      return [] unless anchor
-
-      by_parent = candidates.group_by(&:parent_issue_id)
-      selected = {}
-      queue = [anchor]
-      until queue.empty?
-        item = queue.shift
-        next if selected.key?(item.id) || !item.cosmosys_poris?
-
-        selected[item.id] = item
-        queue.concat(Array(by_parent[item.id]))
-      end
-      selected.values
-    end
-
-    def scope_anchor
-      return @scope_anchor if defined?(@scope_anchor)
-
-      cursor = @issue
-      anchor = cursor if cursor&.cosmosys_poris? && %w[poris_sys poris_param].include?(cursor.cosmosys_item_kind_key)
-      while anchor.nil? && cursor&.parent
-        parent = cursor.parent
-        break if @scope == 'node' && parent.project_id != @project.id
-
-        cursor = parent
-        if cursor.cosmosys_poris? && %w[poris_sys poris_param].include?(cursor.cosmosys_item_kind_key)
-          anchor = cursor
-          break
-        end
-      end
-      @scope_anchor = anchor || @issue
-    end
-
     def model_roots
       @items.values.select { |issue| issue.parent_issue_id.blank? || !@items.key?(issue.parent_issue_id) }
     end
 
     def synthetic_root_xml
-      node_element('sub-system', id: -@project.id, name: @project.name, type: 'PORISNode', ident: "project:#{@project.identifier}", project_id: @project.id) do
+      node_element('sub-system', id: -@project_data.id, name: @project_data.name, type: 'PORISNode', ident: "project:#{@project_data.identifier}", project_id: @project_data.id) do
         add_labels([]) + add_destinations(model_roots) + add_node_attributes + add_default_mode('sub-system')
       end
     end
@@ -105,7 +50,7 @@ module CosmosysPoris
     def item_xml(issue)
       tag, xml_type, _destination_type = node_definition(issue)
       node_element(tag, id: issue.id, name: issue.subject, type: xml_type, ident: issue.pr_src_label.presence || issue.csid, project_id: issue.project_id) do
-        add_labels(issue.cosmosys_poris_labels.to_a) +
+        add_labels(issue.cosmosys_poris_labels) +
           add_destinations(destinations_for(issue)) +
           add_command_references(issue) +
           add_node_attributes +
@@ -132,7 +77,7 @@ module CosmosysPoris
 
     def add_labels(labels)
       entries = labels.map do |item_label|
-        "<label>#{xml_element('name', item_label.label)}<scope-kind>#{xml_element('name', item_label.label_scope.key)}</scope-kind></label>"
+        "<label>#{xml_element('name', item_label.label)}<scope-kind>#{xml_element('name', item_label.scope_key)}</scope-kind></label>"
       end
       "<labels type=\"array\">#{entries.join}</labels>"
     end
@@ -187,7 +132,8 @@ module CosmosysPoris
     def add_default_mode(tag, issue: nil)
       return '' unless %w[mode sub-system].include?(tag)
 
-      xml_element('default-mode-id', nil, type: 'integer', nil_value: true) +
+      default_mode_id = @focused_container_modes&.[](issue&.id)&.first
+      xml_element('default-mode-id', default_mode_id, type: 'integer', nil_value: default_mode_id.nil?) +
         if tag == 'mode'
           default_value = destinations_for(issue).find { |target| target.cosmosys_item_kind_key == 'poris_value' }
           xml_element(
@@ -202,12 +148,17 @@ module CosmosysPoris
     end
 
     def destinations_for(issue)
+      if @focused_container_destinations&.key?(issue.id)
+        return @focused_container_destinations.fetch(issue.id).filter_map { |id| @items[id] }
+      elsif @focused_mode_destinations&.key?(issue.id)
+        return @focused_mode_destinations.fetch(issue.id).filter_map { |id| @items[id] }
+      end
+
       case issue.cosmosys_item_kind_key
       when 'poris_sys', 'poris_param'
         Array(@children[issue.id]).select { |child| NODE_TYPES.key?(child.cosmosys_item_kind_key) && child.cosmosys_item_kind_key != 'poris_cmd' }
       when 'poris_mode'
-        relation_ids = IssueRelation.where(issue_from_id: issue.id, relation_type: 'blocks').order(:id).pluck(:issue_to_id)
-        relation_ids.filter_map { |id| @items[id] }.select { |target| %w[poris_mode poris_value].include?(target.cosmosys_item_kind_key) }
+        Array(@option_destination_ids[issue.id]).filter_map { |id| @items[id] }
       else
         []
       end

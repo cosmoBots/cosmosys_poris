@@ -16,6 +16,7 @@ module CosmosysPoris
                  dependent: :destroy,
                  inverse_of: :issue
         before_validation :cosmosys_poris_apply_defaults, on: :create
+        before_validation :cosmosys_poris_clear_schedule_dates
         validate :cosmosys_poris_validate_fields
       end
     end
@@ -88,6 +89,24 @@ module CosmosysPoris
       return super unless cosmosys_poris?
 
       cosmosys_poris_wrapped_name(subject, boundary: boundary)
+    end
+
+    def cosmosys_dependency_relation_color(relation_type)
+      return '#FF9900' if cosmosys_poris? && relation_type.to_s == 'precedes'
+
+      super
+    end
+
+    def cosmosys_dependency_relation_arrowhead(relation_type)
+      return 'vee' if cosmosys_poris? && relation_type.to_s == 'precedes'
+
+      super
+    end
+
+    def cosmosys_dependency_relation_edge_style(relation_type)
+      return 'solid' if cosmosys_poris? && relation_type.to_s == 'precedes'
+
+      super
     end
 
     def cosmosys_poris_labels_payload
@@ -184,6 +203,13 @@ module CosmosysPoris
 
     def cosmosys_poris_apply_defaults
       self.pr_value_kind ||= 'enum' if cosmosys_poris_value?
+    end
+
+    def cosmosys_poris_clear_schedule_dates
+      return unless cosmosys_poris?
+
+      self.start_date = nil
+      self.due_date = nil
     end
 
     def cosmosys_poris_validate_fields

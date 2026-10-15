@@ -1,0 +1,43 @@
+<h2><%= t('cosmosys_poris.datums.title') %>: <%= @project.name %></h2>
+
+<% if @datum_target_projects.empty? %>
+  <p class="warning"><%= t('cosmosys_poris.datums.no_targets') %></p>
+  <%= link_to t('cosmosys_poris.datums.cancel'), project_poris_viewer_path(@project), class: 'button' %>
+<% else %>
+  <%= form_tag generate_project_poris_datums_path(@project), method: :post do %>
+    <p>
+      <%= label_tag :target_project_id, t('cosmosys_poris.datums.target_project') %>
+      <%= select_tag :target_project_id,
+                     options_from_collection_for_select(@datum_target_projects, :id, :name, @target_project.id),
+                     id: 'target_project_id' %>
+    </p>
+    <p class="help">
+      <%= t('cosmosys_poris.datums.missing') %>: <%= @datum_plan.missing.length %>;
+      <%= t('cosmosys_poris.datums.existing') %>: <%= @datum_plan.existing.length %>.
+      <%= t('text_cosmosys_poris_preview_not_saved') %>
+    </p>
+    <%= submit_tag t('cosmosys_poris.datums.submit'), class: 'button' %>
+    <%= link_to t('cosmosys_poris.datums.cancel'), project_poris_viewer_path(@project), class: 'button' %>
+  <% end %>
+
+  <% if @datum_plan.datums.any? %>
+    <table class="list">
+      <thead>
+        <tr>
+          <th>csID</th>
+          <th><%= t('cosmosys_poris.datums.source') %></th>
+          <th><%= t('cosmosys_poris.datums.existing') %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @datum_plan.datums.sort_by { |datum| datum[:key].downcase }.each do |datum| %>
+          <tr>
+            <td><code><%= datum[:key] %></code></td>
+            <td><%= datum[:description].to_s.gsub('**', '') %></td>
+            <td><%= @datum_plan.existing.any? { |entry| entry[:key].casecmp?(datum[:key]) } ? t('cosmosys_poris.datums.existing') : t('cosmosys_poris.datums.missing') %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% end %>
