@@ -4,11 +4,11 @@ Redmine::Plugin.register :cosmosys_poris do
   name 'cosmoSys PORIS'
   author 'cosmoBots.eu'
   description 'PORIS model profiles and tooling for cosmoSys.'
-  version '0.1.0'
+  version '0.2.0'
   url 'https://cosmobots.eu'
   author_url 'https://cosmobots.eu'
 
-  requires_redmine_plugin :cosmosys, version_or_higher: '0.1.7'
+  requires_redmine_plugin :cosmosys, version_or_higher: '0.1.8'
 
   permission :view_poris_model,
              { 'cosmosys_poris/viewer' => %i[show model panel tab issue_preview issue_sidebar commit run_validation datum_preflight generate_datums] },
