@@ -8,15 +8,18 @@ module CosmosysPoris
     attr_reader :items
 
     def initialize(project, user: User.current)
-      project_ids = project.self_and_descendants.pluck(:id)
-      @items = Issue.visible(user).where(project_id: project_ids)
-                      .includes(:parent).to_a.select(&:cosmosys_poris?)
-                      .index_by(&:id)
+      selection = Cosmosys::ViewAudienceSelector.for_project(
+        project, scope: :project_and_descendants, user: user,
+        relation_types: OptionRelations::ENABLEMENT_TYPES
+      )
+      @items = selection.audience_items.select(&:cosmosys_poris?).index_by(&:id)
       @children = @items.values.group_by(&:parent_issue_id)
       @modes = @items.values.select { |item| item.cosmosys_item_kind_key == 'poris_mode' }.index_by(&:id)
       @values = @items.values.select { |item| item.cosmosys_item_kind_key == 'poris_value' }.index_by(&:id)
       @commands = @items.values.select { |item| item.cosmosys_item_kind_key == 'poris_cmd' }.index_by(&:id)
-      @relations = OptionRelations.grouped_by_mode(@modes.keys)
+      @relations = OptionRelations.grouped_by_mode(
+        @modes.keys, relations: selection.relations + selection.boundary_relations
+      )
       @roots = ordered(@items.values.select { |item| !@items.key?(item.parent_issue_id) })
       @state = {}
       @items.values.each do |item|

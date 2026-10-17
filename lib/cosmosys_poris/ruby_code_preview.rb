@@ -15,15 +15,17 @@ module CosmosysPoris
     end
 
     def render(include_validation: true, include_code: true)
-      @items = Issue.visible(@user)
-                    .where(project_id: @project.self_and_descendants.select(:id))
-                    .includes(:parent)
-                    .to_a
-                    .select(&:cosmosys_poris?)
+      selection = Cosmosys::ViewAudienceSelector.for_project(
+        @project, scope: :project_and_descendants, user: @user,
+        relation_types: OptionRelations::ENABLEMENT_TYPES
+      )
+      @selection = selection
+      @items = selection.audience_items.select(&:cosmosys_poris?)
+      @option_relations = selection.relations + selection.boundary_relations
       @items_by_id = @items.index_by(&:id)
       @children = @items.group_by(&:parent_issue_id)
       mode_ids = @items.select { |item| kind(item) == 'poris_mode' }.map(&:id)
-      @targets = OptionRelations.grouped_by_mode(mode_ids).transform_values do |relations|
+      @targets = OptionRelations.grouped_by_mode(mode_ids, relations: @option_relations).transform_values do |relations|
         relations.filter_map { |relation| @items_by_id[relation.issue_to_id] }
       end
       steps = include_validation ? validation_steps : []
@@ -134,7 +136,9 @@ module CosmosysPoris
 
     def validation_steps
       @planning_runtime = RuntimeModel.new(@project, user: @user)
-      project_preview = @project_preview || ProjectSpecPreview.new(@project, user: @user).render
+      project_preview = @project_preview || ProjectSpecPreview.new(
+        @project, user: @user, selection: @selection
+      ).render
       source_steps = project_preview.validation_steps
       source_steps.map { |step| compile_validation_step(step) }
     end

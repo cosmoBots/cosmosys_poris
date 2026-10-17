@@ -9,14 +9,19 @@ module CosmosysPoris
     end
 
     def plan(target_project: @source_project)
-      validate_target!(target_project)
-      datums = ProjectSpecPreview.new(@source_project, user: @user).render.datums
+      selection = Cosmosys::ViewAudienceSelector.for_project(
+        @source_project, scope: :project_and_descendants, user: @user,
+        relation_types: OptionRelations::ENABLEMENT_TYPES
+      )
+      validate_target!(target_project, selection: selection)
+      datums = ProjectSpecPreview.new(@source_project, user: @user, selection: selection).render.datums
       key_list = datums.map { |datum| datum[:key].downcase }
+      project_ids = selection.projects.map(&:id)
       matching = if key_list.empty?
                    Issue.none
                  else
                    Issue.joins(:tracker)
-                        .where(project_id: tree_project_ids)
+                        .where(project_id: project_ids)
                         .where('LOWER(issues.csid) IN (?)', key_list)
                  end
       datum_items = matching.where(trackers: { csys_item_kind: 'datum' }).to_a
@@ -63,14 +68,10 @@ module CosmosysPoris
 
     private
 
-    def validate_target!(target_project)
-      raise ActiveRecord::RecordNotFound unless target_project && tree_project_ids.include?(target_project.id)
+    def validate_target!(target_project, selection:)
+      raise ActiveRecord::RecordNotFound unless target_project && selection.projects.any? { |project| project.id == target_project.id }
       raise ActiveRecord::RecordNotFound unless target_project.trackers.exists?(csys_key: 'cs_datum')
       raise ActiveRecord::RecordNotFound unless @user&.allowed_to?(:add_issues, target_project)
-    end
-
-    def tree_project_ids
-      @tree_project_ids ||= @source_project.root.self_and_descendants.pluck(:id)
     end
 
     def provenance_description(datum)

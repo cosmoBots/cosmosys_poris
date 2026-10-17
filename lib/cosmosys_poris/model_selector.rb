@@ -53,40 +53,30 @@ module CosmosysPoris
     private
 
     def visible_candidate_items
-      candidate_project_ids = candidate_projects.map(&:id).to_set
       focus_project = if @scope == 'node_down'
                         scope_anchor&.project || @project
                       else
                         @project
                       end
-      generic_scope = @scope == 'node' ? :project_ancestors_and_descendants : :project_and_descendants
+      generic_scope = @scope == 'node' ? :project_and_ancestors : :project_and_descendants
       selection = Cosmosys::ViewAudienceSelector.for_project(
         focus_project, scope: generic_scope, user: @user,
         relation_types: OptionRelations::ENABLEMENT_TYPES
       )
-      model_items = selection.diagram_model.audience_items.select do |item|
-        candidate_project_ids.include?(item.project_id)
+      candidate_project_ids = if @scope == 'node'
+                                ([@project.id] + focused_ancestor_project_ids).to_set
+                              else
+                                selection.projects.map(&:id).to_set
+                              end
+      @selected_relations = selection.relations + selection.boundary_relations
+      candidates = selection.audience_items.select do |item|
+        candidate_project_ids.include?(item.project_id) && item.cosmosys_poris?
       end
-      source_ids = model_items.map(&:source_id).compact.uniq
-      return [] if source_ids.empty?
-
-      by_id = Issue.visible(@user).where(id: source_ids)
-                    .includes(:parent, cosmosys_poris_labels: :label_scope).to_a
-                    .select(&:cosmosys_poris?).index_by(&:id)
-      order_by_tree_position(by_id.values)
-    end
-
-    def candidate_projects
-      ids = case @scope
-            when 'node'
-              ([@project.id] + focused_ancestor_project_ids).uniq
-            when 'node_down'
-              anchor_project = scope_anchor&.project
-              ((anchor_project || @project).self_and_descendants.pluck(:id) + [@project.id]).uniq
-            else
-              @project.self_and_descendants.pluck(:id)
-            end
-      ::Project.visible(@user).where(id: ids).order(:lft, :id).to_a
+      ActiveRecord::Associations::Preloader.new(
+        records: candidates,
+        associations: { cosmosys_poris_labels: :label_scope }
+      ).call
+      order_by_tree_position(candidates)
     end
 
     def select_scoped_items(candidates)
@@ -136,7 +126,7 @@ module CosmosysPoris
       @candidate_items_by_id = candidates.index_by(&:id)
       @candidate_children = candidates.group_by(&:parent_issue_id)
       mode_ids = candidates.select { |item| item.cosmosys_item_kind_key == 'poris_mode' }.map(&:id)
-      @option_relations_by_mode = OptionRelations.grouped_by_mode(mode_ids)
+      @option_relations_by_mode = OptionRelations.grouped_by_mode(mode_ids, relations: @selected_relations)
       @option_target_ids = @option_relations_by_mode.transform_values { |relations| relations.map(&:issue_to_id) }
       @focused_items = {}
       @focused_container_destinations = {}
@@ -217,7 +207,7 @@ module CosmosysPoris
 
     def option_destination_ids(items)
       mode_ids = items.select { |item| item.cosmosys_item_kind_key == 'poris_mode' }.map(&:id)
-      OptionRelations.grouped_by_mode(mode_ids).transform_values do |relations|
+      OptionRelations.grouped_by_mode(mode_ids, relations: @selected_relations).transform_values do |relations|
         relations.map(&:issue_to_id)
       end
     end

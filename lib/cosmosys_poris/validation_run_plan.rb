@@ -43,14 +43,19 @@ module CosmosysPoris
     end
 
     def fingerprint
-      projects = @project.self_and_descendants
-      issues = Issue.visible(@user).where(project_id: projects.select(:id))
-      relations = IssueRelation.where(issue_from_id: issues.select(:id))
-                              .or(IssueRelation.where(issue_to_id: issues.select(:id)))
+      selection = Cosmosys::ViewAudienceSelector.for_project(
+        @project, scope: :project_and_descendants, user: @user,
+        relation_types: OptionRelations::ENABLEMENT_TYPES
+      )
+      issues = selection.audience_items
+      relations = selection.relations + selection.boundary_relations
       # Include relation contents (they have no reliable updated_at), model
-      # fields, hierarchy and visibility. Bulk reads avoid preview generation.
-      tables = [projects, issues, relations, Tracker.all]
-      rows = tables.map { |scope| scope.reorder(:id).pluck(*scope.klass.column_names) }
+      # fields, hierarchy and visibility. The selector's records are already
+      # loaded, so fingerprinting does not repeat project-tree discovery.
+      trackers = Tracker.where(id: issues.map(&:tracker_id).uniq).order(:id).to_a
+      rows = [selection.projects, issues, relations, trackers].map do |records|
+        records.sort_by(&:id).map { |record| record.attributes.slice(*record.class.column_names) }
+      end
       Digest::SHA256.hexdigest(Marshal.dump([I18n.locale.to_s, rows]))
     end
   end

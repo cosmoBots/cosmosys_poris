@@ -4,23 +4,24 @@ module CosmosysPoris
   class ProjectSpecPreview
     Result = Struct.new(:requirements_markdown, :validation_markdown, :datums, :validation_steps, keyword_init: true)
 
-    def initialize(project, user: User.current)
+    def initialize(project, user: User.current, selection: nil)
       @project = project
       @user = user
+      @selection = selection
     end
 
     def render
       @project.with_cosmosys_locale do
-        items = Issue.visible(@user)
-                     .where(project_id: @project.self_and_descendants.select(:id))
-                     .includes(:parent)
-                     .to_a
-                     .select(&:cosmosys_poris?)
+        selection = @selection || Cosmosys::ViewAudienceSelector.for_project(
+          @project, scope: :project_and_descendants, user: @user,
+          relation_types: OptionRelations::ENABLEMENT_TYPES
+        )
+        items = selection.audience_items.select(&:cosmosys_poris?)
         item_ids = items.map(&:id).to_set
         roots = items.select { |item| !item.parent_issue_id || !item_ids.include?(item.parent_issue_id) }
                       .sort_by { |item| [item.csid.to_s, item.id] }
         previews = roots.map do |root|
-          [root, SpecPreview.new(root, user: @user, locale_project: @project).render, :root]
+          [root, SpecPreview.new(root, user: @user, locale_project: @project, selection: selection).render, :root]
         end
 
         # A prSys preview intentionally stops at the interface modes of its
@@ -31,7 +32,7 @@ module CosmosysPoris
           item.cosmosys_item_kind_key == 'poris_param' && !root_ids.include?(item.id)
         end.sort_by { |item| [item.csid.to_s, item.id] }
         previews.concat(parameter_scopes.map do |parameter|
-          [parameter, SpecPreview.new(parameter, user: @user, locale_project: @project).render, :parameter]
+          [parameter, SpecPreview.new(parameter, user: @user, locale_project: @project, selection: selection).render, :parameter]
         end)
 
         datums = previews.flat_map { |_item, preview, _scope| preview.datums }.uniq { |datum| datum[:key].downcase }

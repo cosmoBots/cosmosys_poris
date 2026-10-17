@@ -9,10 +9,11 @@ module CosmosysPoris
     PORIS_KINDS = %w[poris_sys poris_param poris_mode poris_value poris_cmd].freeze
     CONTAINER_KINDS = %w[poris_sys poris_param].freeze
 
-    def initialize(issue, user: User.current, locale_project: nil)
+    def initialize(issue, user: User.current, locale_project: nil, selection: nil)
       @issue = issue
       @user = user
       @locale_project = locale_project || issue&.project
+      @selection = selection
       @datums = {}
       @requirements = []
       @requirement_description = []
@@ -59,19 +60,18 @@ module CosmosysPoris
                 else
                   visible_parent || issue
                 end
-      project_ids = @anchor.project.self_and_descendants.pluck(:id)
-      project_ids << @anchor.project_id
-      @items = Issue.visible(user)
-                    .where(project_id: project_ids.uniq)
-                    .includes(:parent)
-                    .to_a
-                    .select(&:cosmosys_poris?)
+      selection = @selection || Cosmosys::ViewAudienceSelector.for_project(
+        @anchor.project, scope: :project_and_descendants, user: user,
+        relation_types: OptionRelations::ENABLEMENT_TYPES
+      )
+      @items = selection.audience_items.select(&:cosmosys_poris?)
+      @option_relations = selection.relations + selection.boundary_relations
       @items << @anchor unless @items.any? { |item| item.id == @anchor.id }
       @items << issue unless @items.any? { |item| item.id == issue.id }
       @items_by_id = @items.index_by(&:id)
       @children = @items.group_by(&:parent_issue_id)
       mode_ids = @items.select { |item| item.cosmosys_item_kind_key == 'poris_mode' }.map(&:id)
-      @option_targets = OptionRelations.grouped_by_mode(mode_ids).transform_values do |relations|
+      @option_targets = OptionRelations.grouped_by_mode(mode_ids, relations: @option_relations).transform_values do |relations|
         relations.filter_map do |relation|
           target = @items_by_id[relation.issue_to_id]
           target if target
