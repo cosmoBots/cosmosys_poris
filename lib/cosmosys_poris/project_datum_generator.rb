@@ -22,7 +22,7 @@ module CosmosysPoris
                  else
                    Issue.joins(:tracker)
                         .where(project_id: project_ids)
-                        .where('LOWER(issues.csid) IN (?)', key_list)
+                        .where(Issue.arel_table[:csid].lower.in(key_list))
                  end
       datum_items = matching.where(trackers: { csys_item_kind: 'datum' }).to_a
       existing_by_key = datum_items.index_by { |issue| issue.csid.to_s.downcase }

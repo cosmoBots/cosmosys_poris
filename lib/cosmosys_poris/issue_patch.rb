@@ -112,7 +112,7 @@ module CosmosysPoris
     def cosmosys_poris_labels_payload
       return '[]' unless cosmosys_poris?
 
-      labels = cosmosys_poris_labels.includes(:label_scope).order('cosmosys_poris_label_scopes.key').map do |item_label|
+      labels = cosmosys_poris_labels.includes(:label_scope).order(CosmosysPoris::LabelScope.arel_table[:key]).map do |item_label|
         { 'scope' => item_label.label_scope.key, 'label' => item_label.label }
       end
       labels.to_json

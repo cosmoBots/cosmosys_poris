@@ -33,7 +33,8 @@ class CreateCosmosysPoris < ActiveRecord::Migration[6.1]
       t.string :name, null: false
       t.timestamps null: false
     end unless table_exists?(:cosmosys_poris_label_scopes)
-    add_index :cosmosys_poris_label_scopes, 'LOWER(key)', unique: true, name: 'idx_poris_label_scopes_lower_key' unless index_exists?(:cosmosys_poris_label_scopes, name: 'idx_poris_label_scopes_lower_key')
+    # LabelScope normalizes keys to uppercase before validation.
+    add_index :cosmosys_poris_label_scopes, :key, unique: true, name: 'idx_poris_label_scopes_key' unless index_exists?(:cosmosys_poris_label_scopes, name: 'idx_poris_label_scopes_key')
 
     create_table :cosmosys_poris_item_labels do |t|
       t.integer :issue_id, null: false
@@ -53,10 +54,11 @@ class CreateCosmosysPoris < ActiveRecord::Migration[6.1]
       tracker = tracker_class.find_by(csys_key: key)
       next unless tracker
 
-      raise "Cannot remove PORIS tracker #{tracker.name} while it has items" if select_value("SELECT 1 FROM issues WHERE tracker_id = #{tracker.id} LIMIT 1")
+      issue_class = Class.new(ActiveRecord::Base) { self.table_name = 'issues' }
+      raise "Cannot remove PORIS tracker #{tracker.name} while it has items" if issue_class.where(tracker_id: tracker.id).exists?
 
-      execute "DELETE FROM workflows WHERE tracker_id = #{tracker.id}" if table_exists?(:workflows)
-      execute "DELETE FROM projects_trackers WHERE tracker_id = #{tracker.id}" if table_exists?(:projects_trackers)
+      workflow_class.where(tracker_id: tracker.id).delete_all if table_exists?(:workflows)
+      assignment_class.where(tracker_id: tracker.id).delete_all if table_exists?(:projects_trackers)
       tracker.destroy!
     end
     drop_table :cosmosys_poris_item_labels if table_exists?(:cosmosys_poris_item_labels)
@@ -66,16 +68,31 @@ class CreateCosmosysPoris < ActiveRecord::Migration[6.1]
 
   private
 
+  def workflow_class
+    @workflow_class ||= Class.new(ActiveRecord::Base) do
+      self.table_name = 'workflows'
+      self.inheritance_column = :_disabled_type
+    end
+  end
+
+  def assignment_class
+    @assignment_class ||= Class.new(ActiveRecord::Base) do
+      self.table_name = 'projects_trackers'
+      self.primary_key = nil
+    end
+  end
+
   def tracker_class
     @tracker_class ||= Class.new(ActiveRecord::Base) { self.table_name = 'trackers' }.tap(&:reset_column_information)
   end
 
   def install_trackers
-    status_id = select_value('SELECT id FROM issue_statuses ORDER BY position, id LIMIT 1')
+    status_class = Class.new(ActiveRecord::Base) { self.table_name = 'issue_statuses' }
+    status_id = status_class.order(:position, :id).pick(:id)
     raise 'cosmoSys PORIS requires at least one Redmine item status' if status_id.blank?
 
-    source_id = select_value("SELECT id FROM trackers WHERE LOWER(name) = 'feature' ORDER BY id LIMIT 1") ||
-                select_value('SELECT id FROM trackers ORDER BY id LIMIT 1')
+    source_id = tracker_class.where(tracker_class.arel_table[:name].lower.eq('feature')).order(:id).pick(:id) ||
+                tracker_class.order(:id).pick(:id)
     raise 'cosmoSys PORIS requires at least one tracker to copy workflow from' if source_id.blank?
 
     TRACKERS.each do |key, name, profile|
@@ -83,19 +100,21 @@ class CreateCosmosysPoris < ActiveRecord::Migration[6.1]
       tracker.assign_attributes(name: name, csys_key: key, csys_item_kind: profile, default_status_id: status_id)
       tracker.save!
       copy_workflows(source_id, tracker.id)
-      execute "INSERT INTO projects_trackers (project_id, tracker_id) SELECT id, #{tracker.id} FROM projects WHERE csys_project_profile = 'poris' ON CONFLICT DO NOTHING"
+      project_class = Class.new(ActiveRecord::Base) { self.table_name = 'projects' }
+      project_class.where(csys_project_profile: 'poris').find_each do |project|
+        assignment_class.find_or_create_by!(project_id: project.id, tracker_id: tracker.id)
+      end
     end
   end
 
   def copy_workflows(source_id, tracker_id)
     return unless table_exists?(:workflows)
 
-    columns = self.columns(:workflows).map(&:name) - %w[id tracker_id]
-    quoted = columns.map { |column| connection.quote_column_name(column) }
-    execute "DELETE FROM workflows WHERE tracker_id = #{tracker_id}"
-    execute <<~SQL.squish
-      INSERT INTO workflows (tracker_id, #{quoted.join(', ')})
-      SELECT #{tracker_id}, #{quoted.join(', ')} FROM workflows WHERE tracker_id = #{source_id}
-    SQL
+    return if source_id == tracker_id
+
+    workflow_class.where(tracker_id: tracker_id).delete_all
+    workflow_class.where(tracker_id: source_id).find_each do |workflow|
+      workflow_class.create!(workflow.attributes.except('id').merge('tracker_id' => tracker_id))
+    end
   end
 end
