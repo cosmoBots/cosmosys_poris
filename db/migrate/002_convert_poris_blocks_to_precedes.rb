@@ -29,8 +29,10 @@ class ConvertPorisBlocksToPrecedes < ActiveRecord::Migration[6.1]
   end
 
   def down
-    raise ActiveRecord::IrreversibleMigration,
-          'PORIS precedes relations may now contain priorities and cannot be safely restored to blocks.'
+    # This data conversion owns no schema. Schema rollback deliberately retains
+    # the converted relations and their current priorities: original blocks
+    # and cleared dates cannot be reconstructed. Reapplying up is safe.
+    say 'Retaining PORIS precedes relations/priorities; cleared dates are not restored.'
   end
 
   private

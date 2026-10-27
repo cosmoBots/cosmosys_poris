@@ -1,5 +1,10 @@
 # cosmoSys PORIS
 
+Version: **0.2.3**.
+
+This version uses Rails/ActiveRecord/Arel for database access and historical
+migrations, reconciles the label-scope foreign key and requires cosmoSys 0.2.4.
+
 PORIS modelling extension for [cosmoSys](https://github.com/cosmoBots/cosmoSys),
 a free and open source plugin for Redmine.
 
@@ -29,16 +34,21 @@ cosmoSys PORIS requires the [cosmoSys](https://github.com/cosmoBots/cosmoSys)
 plugin. Both are licensed under GPLv3 by cosmoBots.eu.
 
 It is developed and validated against **Redmine 7.0.1** (Rails 8). It declares
-`requires_redmine_plugin :cosmosys, version_or_higher: '0.1.8'`, so Redmine
+`requires_redmine_plugin :cosmosys, version_or_higher: '0.2.4'`, so Redmine
 refuses to start it unless the installed cosmoSys version satisfies that
-constraint. Use cosmoSys **0.1.9 or later** when upgrading existing installations
-to include the required-project-tracker repair.
+constraint.
 
 The compiled porisViewer assets are included in this repository. Installing
 the plugin does not require Node.js, a separate viewer checkout, or this
 development workspace.
 
 ## Installation (classic, no Docker)
+
+Migration 002 converts legacy PORIS `blocks` relations to `precedes` and clears
+scheduling dates. Its `down` permits schema rollback but deliberately retains
+the converted relations and their current ordering priorities; it does not
+reconstruct former relation types or dates. Normal upgrades run forwards.
+Full removal still refuses to delete PORIS trackers while they contain items.
 
 Install cosmoSys PORIS into an existing Redmine instance with a working
 cosmoSys installation (see its
