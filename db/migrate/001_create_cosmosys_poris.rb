@@ -33,12 +33,13 @@ class CreateCosmosysPoris < ActiveRecord::Migration[6.1]
       t.string :name, null: false
       t.timestamps null: false
     end unless table_exists?(:cosmosys_poris_label_scopes)
-    # LabelScope normalizes keys to uppercase before validation.
-    add_index :cosmosys_poris_label_scopes, :key, unique: true, name: 'idx_poris_label_scopes_key' unless index_exists?(:cosmosys_poris_label_scopes, name: 'idx_poris_label_scopes_key')
+    attribute = Arel::Nodes::UnqualifiedColumn.new(Arel::Table.new(:cosmosys_poris_label_scopes)[:key])
+    expression = Arel::Nodes::Grouping.new(Arel::Nodes::NamedFunction.new('LOWER', [attribute]))
+    add_index :cosmosys_poris_label_scopes, expression.to_sql, unique: true, name: 'idx_poris_label_scopes_lower_key' unless index_exists?(:cosmosys_poris_label_scopes, name: 'idx_poris_label_scopes_lower_key')
 
     create_table :cosmosys_poris_item_labels do |t|
       t.integer :issue_id, null: false
-      t.integer :label_scope_id, null: false
+      t.bigint :label_scope_id, null: false
       t.string :label, null: false
       t.timestamps null: false
     end unless table_exists?(:cosmosys_poris_item_labels)
