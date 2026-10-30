@@ -1,6 +1,13 @@
 # cosmoSys PORIS
 
-Version: **0.2.3**.
+Version: **0.2.4-dirty** (development).
+
+Optional execution integrations can register a runtime result adapter through
+`CosmosysPoris::RuntimeExecutionAdapters.register`. Adapters receive the user,
+project, accepted state and operation results after commit; a rejected operation
+suppresses all adapters. Results appear under `executions`, without changing the
+configuration state or implying hardware execution. No adapter is installed by
+PORIS itself. Architecture integration lives in the separate cosmosys_poris_arch.
 
 This version uses Rails/ActiveRecord/Arel for database access and historical
 migrations, reconciles the label-scope foreign key and requires cosmoSys 0.2.4.

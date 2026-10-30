@@ -4,7 +4,7 @@ Redmine::Plugin.register :cosmosys_poris do
   name 'cosmoSys PORIS'
   author 'cosmoBots.eu'
   description 'PORIS model profiles and tooling for cosmoSys.'
-  version '0.2.3'
+  version '0.2.4-dirty'
   url 'https://cosmobots.eu'
   author_url 'https://cosmobots.eu'
 
@@ -35,6 +35,7 @@ require_dependency File.expand_path('lib/cosmosys_poris/option_relations', __dir
 require_dependency File.expand_path('lib/cosmosys_poris/model_selector', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/model_xml_exporter', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/runtime_model', __dir__)
+require_dependency File.expand_path('lib/cosmosys_poris/runtime_execution_adapters', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/spec_preview', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/project_spec_preview', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/ruby_code_preview', __dir__)

@@ -99,6 +99,9 @@ module CosmosysPoris
       operations.concat(explicit_operations) if params[:operations].present?
       result = runtime.apply(operations)
       save_runtime_session_state(result.fetch('state'))
+      result['executions'] = RuntimeExecutionAdapters.call(
+        project: @project, user: User.current, state: result.fetch('state'), operations: result.fetch('operations')
+      )
       response.headers['Cache-Control'] = 'no-store'
       render json: result
     rescue ActionController::ParameterMissing, ArgumentError, TypeError => error
