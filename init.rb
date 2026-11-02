@@ -29,6 +29,7 @@ require_dependency 'issue_relation'
 require_dependency 'tracker'
 require_dependency File.expand_path('lib/cosmosys_poris/profile_registration', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/model_yaml_dialect', __dir__)
+require_relative 'config/macros_registration'
 require_dependency File.expand_path('lib/cosmosys_poris/issue_patch', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/ods_fields', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/issue_relation_patch', __dir__)

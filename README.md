@@ -7,6 +7,33 @@ ordered limits/defaults. PORIS option edges use `precedes` from modes to
 modes/values. This validates the draft structure and renders Graphviz; it does
 not run the PORIS runtime or create/synchronize any model records.
 
+The same static preview can be embedded in issues, wiki pages and document
+descriptions with a block macro (no arguments):
+
+```text
+{{poris_diagram
+format: cosmosys-model
+version: 1
+project_profile: poris
+projects:
+  demo:
+    name: Documentation
+items:
+  telescope:
+    type: system
+    project: demo
+    subject: Telescope
+}}
+```
+
+Paste a complete PORIS preview YAML between the opening/closing macro lines.
+The body starts at column zero. Rendering is server-side, readonly and bounded;
+no model records are created. Sanitized SVG uses unique IDs per occurrence and
+is converted by cosmoSys's normal report SVG-to-PNG export path. No JavaScript
+or iframe is needed. Native `poris_sys`/`poris_param`/etc. types and `pr_*` field
+names are also accepted, including in YAML drafts for other project profiles;
+PORIS validation follows the item provider rather than the document's profile.
+
 Version: **0.2.4-dirty** (development).
 
 Optional execution integrations can register a runtime result adapter through
