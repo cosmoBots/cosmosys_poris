@@ -1,5 +1,12 @@
 # cosmoSys PORIS
 
+Development: the core read-only YAML preview accepts the `poris` dialect:
+`system`, `parameter`, `mode`, `value`, `command`, `info`; fields `src_label`,
+`value_kind`, `min`, `default`, `max`, `default_text`. Float values require finite
+ordered limits/defaults. PORIS option edges use `precedes` from modes to
+modes/values. This validates the draft structure and renders Graphviz; it does
+not run the PORIS runtime or create/synchronize any model records.
+
 Version: **0.2.4-dirty** (development).
 
 Optional execution integrations can register a runtime result adapter through
