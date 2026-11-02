@@ -2,6 +2,8 @@ module CosmosysPoris
   class ViewerController < ApplicationController
     PROJECT_TABS = %w[configuration requirements validation constructor automated_validation].freeze
 
+    accept_api_auth :model
+    before_action :check_model_api_identity, only: :model
     before_action :find_project_by_project_id
     before_action :authorize
     before_action :load_poris_view_context
@@ -185,6 +187,23 @@ module CosmosysPoris
     end
 
     private
+
+    # Redmine normally discards cookies for XML API requests. This read-only
+    # export also serves the browser: retain its normal session only when no
+    # API credentials were supplied. Key/token requests keep standard API auth.
+    def api_request?
+      if action_name == 'model' && request.get? && params[:format] == 'xml' &&
+         api_key_from_request.blank? && request.authorization.blank? && session[:user_id].present?
+        return false
+      end
+      super
+    end
+
+    def check_model_api_identity
+      # Never downgrade an explicitly supplied invalid/disabled API key to
+      # anonymous access, even when the project happens to be public.
+      head :unauthorized if api_key_from_request.present? && !User.current.logged?
+    end
 
     def prepare_project_tab(tab)
       case tab

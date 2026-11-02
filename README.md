@@ -35,6 +35,58 @@ generating corresponding requirements or validation projects is not yet
 implemented. Creating missing `csDatum` definitions from a reviewed preview is
 supported.
 
+## Download a model using an API key
+
+`GET /projects/:project_id/poris/model.xml` returns the existing PORIS XML for
+external viewers such as pyPORIS. Enable **REST web service** in Redmine's
+administration settings and use an active user's API access key. The key
+identifies that user; normal project permissions and item visibility still
+apply, including private projects and private items. This does not grant API
+authentication to commit, generation or any other controller action.
+
+Prefer the standard header over a query parameter:
+
+```bash
+curl --fail-with-body --silent --show-error \
+  -H "X-Redmine-API-Key: ${REDMINE_API_KEY}" \
+  -H 'Accept: application/xml' \
+  'https://cosmobots.eu/projects/osiris/poris/model.xml' \
+  --output model.xml
+```
+
+Redmine also accepts `?key=YOUR_API_KEY`; avoid it when possible because URLs
+can end up in logs, browser history and copied links. Do not publish real keys.
+When both are supplied, Redmine gives the query parameter precedence.
+
+A successful response is HTTP **200**, `Content-Type: application/xml`, with a
+`<poris>` root, not a login redirect. Clients should check the HTTP status and
+XML root before opening the model rather than following login redirects.
+Invalid keys and inactive users receive **401**; an authenticated user without
+access receives **403** (or **404** for a non-visible scoped item). An explicit
+invalid key never falls back to anonymous access, even for public projects.
+The REST setting is respected; the plugin does not implement a second key
+lookup or bypass that setting.
+
+Without API credentials, existing browser-session access continues to work,
+including the `.xml` URL. Anonymous export is still possible where Redmine's
+settings and project permissions allow it. A supplied API key takes precedence
+over the browser session on the XML endpoint.
+
+The intended client command is
+`pyPORIS/poriscsyspanel.sh https://cosmobots.eu/projects/osiris`: the client
+derives the `/poris/model.xml` URL and sends the header. This plugin change
+does not implement or modify that external command or the XML format.
+
+Regression smoke (transactional, real key/session authentication):
+
+```bash
+bundle exec rails runner -e production \
+  test_support/cosmosys_poris/scripts/run_model_api_auth_smoke_test.rb
+```
+
+The smoke script belongs to the csys development workspace, not the standalone
+plugin package. It rolls back users, keys, roles, fixtures and settings.
+
 ## Requirements
 
 cosmoSys PORIS requires the [cosmoSys](https://github.com/cosmoBots/cosmoSys)
