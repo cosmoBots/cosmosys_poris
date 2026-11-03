@@ -11,7 +11,7 @@ The same static preview can be embedded in issues, wiki pages and document
 descriptions with a block macro (no arguments):
 
 ```text
-{{poris_diagram
+{{cosmosys_diagram
 format: cosmosys-model
 version: 1
 project_profile: poris
@@ -26,7 +26,10 @@ items:
 }}
 ```
 
-Paste a complete PORIS preview YAML between the opening/closing macro lines.
+This macro now belongs to cosmoSys core, not PORIS; the experimental
+`poris_diagram` name has been removed without an alias. PORIS only registers
+its types, fields and validation rules. Paste a complete PORIS preview YAML
+between the opening/closing macro lines.
 The body starts at column zero. Rendering is server-side, readonly and bounded;
 no model records are created. Sanitized SVG uses unique IDs per occurrence and
 is converted by cosmoSys's normal report SVG-to-PNG export path. No JavaScript

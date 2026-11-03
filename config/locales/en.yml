@@ -1,5 +1,4 @@
 en:
-  text_cosmosys_poris_yaml_macro_usage: "Use {{poris_diagram followed by a PORIS model YAML block and }} on its own line. No arguments. This macro never creates model records."
   label_cosmosys_poris_viewer: PORIS viewer
   label_cosmosys_poris_project_profile: PORIS model
   text_cosmosys_poris_project_profile: Project profile for PORIS systems, parameters, modes, values and commands.
