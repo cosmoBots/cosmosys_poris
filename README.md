@@ -37,7 +37,7 @@ or iframe is needed. Native `poris_sys`/`poris_param`/etc. types and `pr_*` fiel
 names are also accepted, including in YAML drafts for other project profiles;
 PORIS validation follows the item provider rather than the document's profile.
 
-Version: **0.2.4-dirty** (development).
+Version **0.2.4**.
 
 Optional execution integrations can register a runtime result adapter through
 `CosmosysPoris::RuntimeExecutionAdapters.register`. Adapters receive the user,
@@ -47,7 +47,8 @@ configuration state or implying hardware execution. No adapter is installed by
 PORIS itself. Architecture integration lives in the separate cosmosys_poris_arch.
 
 This version uses Rails/ActiveRecord/Arel for database access and historical
-migrations, reconciles the label-scope foreign key and requires cosmoSys 0.2.4.
+migrations, reconciles the label-scope foreign key and requires cosmoSys 0.2.8
+for the shared YAML preview/dialect and generic documentation macro.
 
 PORIS modelling extension for [cosmoSys](https://github.com/cosmoBots/cosmoSys),
 a free and open source plugin for Redmine.
@@ -130,7 +131,7 @@ cosmoSys PORIS requires the [cosmoSys](https://github.com/cosmoBots/cosmoSys)
 plugin. Both are licensed under GPLv3 by cosmoBots.eu.
 
 It is developed and validated against **Redmine 7.0.1** (Rails 8). It declares
-`requires_redmine_plugin :cosmosys, version_or_higher: '0.2.4'`, so Redmine
+`requires_redmine_plugin :cosmosys, version_or_higher: '0.2.8'`, so Redmine
 refuses to start it unless the installed cosmoSys version satisfies that
 constraint.
 
