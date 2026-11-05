@@ -1,5 +1,9 @@
 # cosmoSys PORIS
 
+> **EXPERIMENTAL — opt-in:** This plugin is not part of the production core.
+> Expect defects, incomplete features, performance limits and breaking changes.
+> Do not install it if you require production-level stability and support.
+
 Development: the core read-only YAML preview accepts the `poris` dialect:
 `system`, `parameter`, `mode`, `value`, `command`, `info`; fields `src_label`,
 `value_kind`, `min`, `default`, `max`, `default_text`. Float values require finite
@@ -63,9 +67,9 @@ free, open source, and has no per-seat limits. It does not require cosmoSys-Req.
 
 ## Status
 
-This repository contains an early alpha artifact. It is suitable for controlled
-evaluation and is not yet declared production-ready. You can install it and try
-it, but expect breaking changes.
+**EXPERIMENTAL.** PORIS is an optional integration for users prepared to evaluate
+and troubleshoot it. The production status of cosmoSys does not extend to this
+plugin. Keep it disabled if you are not prepared to accept experimental risks.
 
 The runtime checks the model's configuration rules; it does not control
 physical hardware. Requirements and validation previews are available, but
