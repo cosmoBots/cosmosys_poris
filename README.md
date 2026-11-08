@@ -230,6 +230,11 @@ checks stop the run; steps whose expected outcome is not defined are marked
 unverified rather than passed. Editing the model during a run requires restarting
 that run.
 
+The diagram in Configuration and Automated validation outlines the selected
+modes and values with a thicker border. It follows the confirmed session runtime,
+not uncommitted form edits. Inactive Unknown selections are not highlighted;
+numeric range labels remain unchanged. The diagram keeps its layout.
+
 Runtime configurations are private to each user session, not saved as shared
 project state. They are cached on the server for 24 hours after the last write;
 validation plans expire after two hours. The cache must be accessible across

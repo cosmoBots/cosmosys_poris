@@ -65,6 +65,17 @@
   margin-bottom: 1em;
 }
 
+[data-runtime-diagram-image] svg,
+[data-runtime-diagram-image] img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+[data-runtime-diagram-image] [data-poris-runtime-outline] {
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
+}
+
 .poris-tab-loading {
   display: flex;
   align-items: center;

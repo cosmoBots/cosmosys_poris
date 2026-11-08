@@ -48,6 +48,8 @@
   </script>
 <% elsif @project_tab %>
   <script type="module">
+    import {initializeRuntimeDiagrams} from <%= raw asset_path('plugin_assets/cosmosys_poris/runtime_diagram.js').to_json %>;
+    initializeRuntimeDiagrams();
     const interpolate = (template, values) => template.replace(/%\{(\w+)\}/g, (_, key) => String(values[key] ?? ''));
     window.initPorisConfigurationTab = async (container) => {
       const root = container.querySelector('#porisViewer');

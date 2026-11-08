@@ -1,0 +1,5 @@
+<section data-poris-runtime-diagram data-url="<%= @combined_diagram_url %>" data-label="<%= l(:label_cosmosys_project_combined_diagram) %>">
+  <h3><%= l(:label_cosmosys_project_combined_diagram) %></h3>
+  <div data-runtime-diagram-image><%= image_tag @combined_diagram_url, alt: l(:label_cosmosys_project_combined_diagram), loading: 'lazy' %></div>
+  <script type="application/json" data-runtime-diagram-state><%= raw json_escape(Array(@runtime_state).to_json) %></script>
+</section>

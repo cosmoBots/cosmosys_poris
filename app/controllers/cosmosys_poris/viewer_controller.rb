@@ -213,15 +213,6 @@ module CosmosysPoris
         @model_xml = ModelXmlExporter.new(@project, user: User.current, scope: 'project').render
         @runtime_state = hydrated_runtime_state
         @runtime_commit_url = commit_project_poris_state_path(@project)
-        @combined_diagram_url = cosmosys_diagram_export_path(
-          project_id: @project.identifier,
-          kind: 'combined',
-          diagram_format: 'svg',
-          combined_layout_mode: 'dot',
-          render_variant: 'v1',
-          visible_layers_present: 1,
-          visible_layers: %w[blocks precedes cross_project_boundaries]
-        )
       when 'requirements', 'validation'
         @project_preview = ProjectSpecPreview.new(@project, user: User.current).render
         @requirements_plugin_installed = Redmine::Plugin.installed?(:cosmosys_req)
@@ -231,6 +222,17 @@ module CosmosysPoris
       when 'automated_validation'
         @runtime_state = hydrated_runtime_state
         @ruby_code_preview = RubyCodePreview.new(@project, user: User.current).render
+      end
+      if %w[configuration automated_validation].include?(tab)
+        @combined_diagram_url = cosmosys_diagram_export_path(
+          project_id: @project.identifier,
+          kind: 'combined',
+          diagram_format: 'svg',
+          combined_layout_mode: 'dot',
+          render_variant: 'v1',
+          visible_layers_present: 1,
+          visible_layers: %w[blocks precedes cross_project_boundaries]
+        )
       end
     end
     private :prepare_project_tab
