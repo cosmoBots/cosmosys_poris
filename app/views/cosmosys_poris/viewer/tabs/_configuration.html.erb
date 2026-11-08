@@ -9,7 +9,7 @@
   <aside class="poris-project-diagram">
     <h3><%= l(:label_cosmosys_project_combined_diagram) %></h3>
     <%= image_tag @combined_diagram_url, alt: l(:label_cosmosys_project_combined_diagram), loading: 'lazy' %>
-    <%= render partial: 'cosmosys_poris/viewer/runtime_state' %>
     <div data-poris-runtime-view-slot></div>
+    <%= render partial: 'cosmosys_poris/viewer/runtime_state' %>
   </aside>
 </div>
