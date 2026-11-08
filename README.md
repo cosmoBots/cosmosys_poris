@@ -31,10 +31,15 @@ Paste a complete PORIS preview YAML between the opening and closing lines,
 starting the body at column zero. The diagram is static and also works in report
 exports; no interactive viewer is required.
 
-Version **0.2.4**.
+Version **0.2.5-dirty** (development).
 
 Optional execution integrations, such as cosmoSys PORIS Architecture, are
 installed separately. The PORIS runtime alone does not actuate hardware.
+
+With PORIS Architecture installed and a visible CAD binding configured, the
+configuration and automated-validation tabs can show its CAD model. The model
+follows the runtime's confirmed configuration, not unsaved panel edits. This
+is a session-local visualization, not a physical execution of commands.
 
 PORIS modelling extension for [cosmoSys](https://github.com/cosmoBots/cosmoSys),
 a free and open source plugin for Redmine.

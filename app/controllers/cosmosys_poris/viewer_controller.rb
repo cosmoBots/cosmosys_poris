@@ -101,6 +101,7 @@ module CosmosysPoris
       operations.concat(explicit_operations) if params[:operations].present?
       result = runtime.apply(operations)
       save_runtime_session_state(result.fetch('state'))
+      result['observations'] = RuntimeStateObservers.call(project: @project, user: User.current, state: result.fetch('state'))
       result['executions'] = RuntimeExecutionAdapters.call(
         project: @project, user: User.current, state: result.fetch('state'), operations: result.fetch('operations')
       )
@@ -178,7 +179,8 @@ module CosmosysPoris
         query_description: step[:query_description],
         query_expected: step[:query_expected],
         operations: operations,
-        state: runtime.state
+        state: runtime.state,
+        observations: RuntimeStateObservers.call(project: @project, user: User.current, state: runtime.state)
       }
     rescue ValidationRunPlan::Expired => error
       render json: { error: error.message }, status: :conflict

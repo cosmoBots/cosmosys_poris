@@ -16,6 +16,7 @@
     <div id="porisIssueViewer" data-model-url="<%= @model_url %>"></div>
   </div>
 <% elsif @project_tab %>
+  <%= call_hook(:view_cosmosys_poris_runtime, project: @project) %>
   <% project_tabs = %w[configuration requirements validation constructor automated_validation] %>
   <nav class="tabs poris-project-tabs" aria-label="<%= l(:label_cosmosys_poris_project_profile) %>">
     <ul>
@@ -56,6 +57,7 @@
       const initialState = JSON.parse(container.querySelector('.poris-runtime-initial-state')?.textContent || '[]');
       const runtimePanel = container.querySelector('#porisRuntimeState');
       const renderRuntimeResult = (result) => {
+        document.dispatchEvent(new CustomEvent('poris:runtime-confirmed', {detail: result}));
         const nodes = runtimePanel?.querySelector('#porisRuntimeNodes');
         const operations = runtimePanel?.querySelector('#porisRuntimeOperations');
         if (!nodes || !operations) return;

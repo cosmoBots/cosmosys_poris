@@ -108,6 +108,7 @@
           appendResult(result, payload.operations || []);
           operationLog = operationLog.concat(payload.operations || []);
           renderRuntime(payload.state || [], operationLog);
+          document.dispatchEvent(new CustomEvent('poris:runtime-confirmed', {detail: payload}));
           (payload.skipped || []).forEach(function(skipped) { appendResult(skipped, []); });
           if (payload.result.status === 'unverified') hadUnverifiedStep = true;
           if (payload.result.status === 'failed') {
@@ -145,6 +146,7 @@
         else candidate.removeAttribute('aria-current');
       });
       if (updateHistory && window.location.href !== link.href) window.history.pushState({}, '', link.href);
+      document.dispatchEvent(new CustomEvent('poris:tab-selected', {detail: {tab:link.dataset.tab}}));
       if (controller) controller.abort();
       controller = new AbortController();
       var currentRequest = ++requestNumber;
