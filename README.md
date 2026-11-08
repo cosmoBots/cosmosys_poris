@@ -33,6 +33,14 @@ exports; no interactive viewer is required.
 
 Version **0.2.6**.
 
+The runtime resolves an enumerated value's associated data from its project
+variable `<normalized-CSID>_default`, the same key used in generated
+specifications. For example, `pMAX-0008` uses `pMAX_0008_default`. Definitions
+are limited to the same project-root tree and the current user's visibility.
+Finite numbers become numeric runtime data; missing definitions remain unset.
+Client-supplied enum data does not override the project variable. Changing a
+definition is reflected when the runtime is rebuilt against the current model.
+
 Optional execution integrations, such as cosmoSys PORIS Architecture, are
 installed separately. The PORIS runtime alone does not actuate hardware.
 

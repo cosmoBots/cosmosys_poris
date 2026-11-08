@@ -1,3 +1,5 @@
+require_relative 'project_datum_reference'
+
 module CosmosysPoris
   # A short-lived PORIS runtime built from the current project model. Its
   # mutable selections live only for the duration of a request; the session
@@ -8,6 +10,8 @@ module CosmosysPoris
     attr_reader :items
 
     def initialize(project, user: User.current)
+      @user = user
+      @data_dictionaries = {}
       selection = Cosmosys::ViewAudienceSelector.for_project(
         project, scope: :project_and_descendants, user: user,
         relation_types: OptionRelations::ENABLEMENT_TYPES
@@ -181,7 +185,9 @@ module CosmosysPoris
       end
 
       previous_value_id = @state.dig(node.id, 'value_id').to_s
-      converted = if data.nil? && previous_value_id == value.id.to_s
+      converted = if value.pr_value_kind == 'enum'
+                    default_data(value) # Never accept a client-supplied enum number.
+                  elsif data.nil? && previous_value_id == value.id.to_s
                     @state.dig(node.id, 'data') || default_data(value)
                   elsif data.nil?
                     default_data(value)
@@ -256,6 +262,8 @@ module CosmosysPoris
         state['data'] = number unless number.nil?
       elsif value.pr_value_kind == 'text'
         state['data'] = default_data(value) if state['data'].nil?
+      elsif value.pr_value_kind == 'enum'
+        state['data'] = default_data(value)
       else
         state.delete('data')
       end
@@ -267,6 +275,12 @@ module CosmosysPoris
         Float(value.pr_default) rescue nil
       when 'text'
         value.pr_default_text.to_s
+      when 'enum'
+        dictionary = (@data_dictionaries[value.project.root.id] ||=
+          Cosmosys::ProjectDataDictionary.new(project: value.project, user: @user))
+        raw = dictionary.fetch(ProjectDatumReference.key(value, 'default'))&.value
+        number = Float(raw, exception: false) unless raw.nil?
+        number&.finite? ? number : raw
       end
     end
 

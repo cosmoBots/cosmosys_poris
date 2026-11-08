@@ -1,3 +1,5 @@
+require_relative 'project_datum_reference'
+
 module CosmosysPoris
   class SpecPreview
     Result = Struct.new(
@@ -892,9 +894,7 @@ module CosmosysPoris
     end
 
     def datum_key(item, property)
-      source_key = item.csid.presence || "POR_#{item.id}"
-      normalized_source = source_key.gsub(/[^A-Za-z0-9]+/, '_').gsub(/\A_+|_+\z/, '')
-      "#{normalized_source}_#{property}"
+      ProjectDatumReference.key(item, property)
     end
 
     def datum_reference(item, property)
