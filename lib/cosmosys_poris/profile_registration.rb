@@ -37,7 +37,7 @@ module CosmosysPoris
       )
       register_item_profile(
         'poris_cmd', label: :label_cosmosys_poris_cmd,
-        diagram_shape: 'ellipse', diagram_fill_color: '#A8E6A1',
+        diagram_shape: 'cds', diagram_fill_color: '#A8E6A1',
         can_have_children: false,
         allowed_parent_profiles: %w[poris_sys poris_param].freeze
       )
