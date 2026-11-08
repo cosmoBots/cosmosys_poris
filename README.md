@@ -231,7 +231,8 @@ unverified rather than passed. Editing the model during a run requires restartin
 that run.
 
 The diagram in Configuration and Automated validation outlines the selected
-modes and values with a thicker border. It follows the confirmed session runtime,
+modes and values with a thicker border, along with arrows whose two endpoints
+are selected. It follows the confirmed session runtime,
 not uncommitted form edits. Inactive Unknown selections are not highlighted;
 numeric range labels remain unchanged. The diagram keeps its layout.
 

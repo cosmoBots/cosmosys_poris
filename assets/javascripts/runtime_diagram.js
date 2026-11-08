@@ -58,6 +58,11 @@ export function highlightConfiguration(svg, state) {
     const outline = node.querySelector('polygon, ellipse, rect, circle, path');
     if (outline) outline.toggleAttribute('data-poris-runtime-outline', !!id && ids.has(id));
   }
+  for (const edge of svg.querySelectorAll('g.edge')) {
+    const title = [...edge.children].find(child => child.localName === 'title')?.textContent;
+    const endpoints = /^issue_(\d+)->issue_(\d+)$/.exec(title || '');
+    edge.toggleAttribute('data-poris-runtime-edge', !!endpoints && ids.has(endpoints[1]) && ids.has(endpoints[2]));
+  }
 }
 
 export function initializeRuntimeDiagrams() {
