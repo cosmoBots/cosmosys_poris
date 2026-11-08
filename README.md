@@ -4,12 +4,9 @@
 > Expect defects, incomplete features, performance limits and breaking changes.
 > Do not install it if you require production-level stability and support.
 
-Development: the core read-only YAML preview accepts the `poris` dialect:
-`system`, `parameter`, `mode`, `value`, `command`, `info`; fields `src_label`,
-`value_kind`, `min`, `default`, `max`, `default_text`. Float values require finite
-ordered limits/defaults. PORIS option edges use `precedes` from modes to
-modes/values. This validates the draft structure and renders Graphviz; it does
-not run the PORIS runtime or create/synchronize any model records.
+The read-only YAML preview supports systems, parameters, modes, values,
+commands and information items. Numeric limits and defaults must be finite and
+ordered. Previewing a draft does not execute it or create model records.
 
 The same static preview can be embedded in issues, wiki pages and document
 descriptions with a block macro (no arguments):
@@ -30,29 +27,14 @@ items:
 }}
 ```
 
-This macro now belongs to cosmoSys core, not PORIS; the experimental
-`poris_diagram` name has been removed without an alias. PORIS only registers
-its types, fields and validation rules. Paste a complete PORIS preview YAML
-between the opening/closing macro lines.
-The body starts at column zero. Rendering is server-side, readonly and bounded;
-no model records are created. Sanitized SVG uses unique IDs per occurrence and
-is converted by cosmoSys's normal report SVG-to-PNG export path. No JavaScript
-or iframe is needed. Native `poris_sys`/`poris_param`/etc. types and `pr_*` field
-names are also accepted, including in YAML drafts for other project profiles;
-PORIS validation follows the item provider rather than the document's profile.
+Paste a complete PORIS preview YAML between the opening and closing lines,
+starting the body at column zero. The diagram is static and also works in report
+exports; no interactive viewer is required.
 
 Version **0.2.4**.
 
-Optional execution integrations can register a runtime result adapter through
-`CosmosysPoris::RuntimeExecutionAdapters.register`. Adapters receive the user,
-project, accepted state and operation results after commit; a rejected operation
-suppresses all adapters. Results appear under `executions`, without changing the
-configuration state or implying hardware execution. No adapter is installed by
-PORIS itself. Architecture integration lives in the separate cosmosys_poris_arch.
-
-This version uses Rails/ActiveRecord/Arel for database access and historical
-migrations, reconciles the label-scope foreign key and requires cosmoSys 0.2.8
-for the shared YAML preview/dialect and generic documentation macro.
+Optional execution integrations, such as cosmoSys PORIS Architecture, are
+installed separately. The PORIS runtime alone does not actuate hardware.
 
 PORIS modelling extension for [cosmoSys](https://github.com/cosmoBots/cosmoSys),
 a free and open source plugin for Redmine.
