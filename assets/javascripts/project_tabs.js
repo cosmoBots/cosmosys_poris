@@ -163,6 +163,7 @@
       }).then(function(html) {
         if (currentRequest !== requestNumber) return;
         content.innerHTML = html;
+        document.dispatchEvent(new CustomEvent('poris:tab-ready', {detail: {tab:link.dataset.tab}}));
         if (link.dataset.tab === 'configuration' && window.initPorisConfigurationTab) return window.initPorisConfigurationTab(content);
         if (link.dataset.tab === 'automated_validation') initializeValidationRunner(content);
       }).catch(function(error) {

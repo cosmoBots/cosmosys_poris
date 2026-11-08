@@ -7,8 +7,9 @@
     <script type="application/json" class="poris-runtime-initial-state"><%= raw json_escape(Array(@runtime_state).to_json) %></script>
   </section>
   <aside class="poris-project-diagram">
-    <%= render partial: 'cosmosys_poris/viewer/runtime_state' %>
     <h3><%= l(:label_cosmosys_project_combined_diagram) %></h3>
     <%= image_tag @combined_diagram_url, alt: l(:label_cosmosys_project_combined_diagram), loading: 'lazy' %>
+    <%= render partial: 'cosmosys_poris/viewer/runtime_state' %>
+    <div data-poris-runtime-view-slot></div>
   </aside>
 </div>

@@ -1,6 +1,6 @@
 .poris-project-layout-with-diagram {
   display: grid;
-  grid-template-columns: minmax(22em, 40em) minmax(0, 1fr);
+  grid-template-columns: minmax(22em, 38%) minmax(0, 1fr);
   gap: 1.5em;
   align-items: start;
 }
@@ -19,6 +19,15 @@
 .poris-project-layout-with-diagram .poris-project-diagram {
   min-width: 0;
   overflow: auto;
+}
+
+@media (min-width: 1101px) {
+  .poris-project-layout-with-diagram > .poris-project-viewer,
+  .poris-project-layout-with-diagram > .poris-project-diagram {
+    max-height: calc(100vh - 200px);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
 }
 
 .poris-runtime-state {
