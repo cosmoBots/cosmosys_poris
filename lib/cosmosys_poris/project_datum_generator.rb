@@ -52,7 +52,7 @@ module CosmosysPoris
             status: status,
             priority: priority,
             author: @user,
-            subject: datum[:description].to_s.gsub('**', '').truncate(255),
+            subject: datum.fetch(:subject).truncate(255),
             description: provenance_description(datum)
           )
           issue.csid = datum[:key]

@@ -31,7 +31,7 @@ Paste a complete PORIS preview YAML between the opening and closing lines,
 starting the body at column zero. The diagram is static and also works in report
 exports; no interactive viewer is required.
 
-Version **0.2.6**.
+Version **0.2.7-dirty** (development).
 
 The runtime resolves an enumerated value's associated data from its project
 variable `<normalized-CSID>_default`, the same key used in generated

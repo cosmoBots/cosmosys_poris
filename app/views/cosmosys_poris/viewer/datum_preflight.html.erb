@@ -33,7 +33,7 @@
         <% @datum_plan.datums.sort_by { |datum| datum[:key].downcase }.each do |datum| %>
           <tr>
             <td><code><%= datum[:key] %></code></td>
-            <td><%= datum[:description].to_s.gsub('**', '') %></td>
+            <td><%= datum.fetch(:subject) %></td>
             <td><%= @datum_plan.existing.any? { |entry| entry[:key].casecmp?(datum[:key]) } ? t('cosmosys_poris.datums.existing') : t('cosmosys_poris.datums.missing') %></td>
           </tr>
         <% end %>

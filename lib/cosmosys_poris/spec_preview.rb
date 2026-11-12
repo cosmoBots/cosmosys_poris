@@ -850,6 +850,7 @@ module CosmosysPoris
       key = datum_key(item, property)
       @datums[key] ||= {
         key: key,
+        subject: datum_description(item, property, description, markdown: false),
         description: datum_description(item, property, description),
         source_csid: item.csid,
         source_subject: item.subject,
@@ -857,9 +858,9 @@ module CosmosysPoris
       }
     end
 
-    def datum_description(item, property, description)
+    def datum_description(item, property, description, markdown: true)
       noun = datum_item_noun(item)
-      item_name = "**#{name(item)}**"
+      item_name = markdown ? "**#{name(item)}**" : item.subject.to_s
       return tr('datum.test_case_preconditions_of', noun: noun, name: item_name) if property == 'test_preconditions'
       return tr('datum.test_case_postconditions_of', noun: noun, name: item_name) if property == 'test_postconditions'
       return tr('datum.purpose_of', noun: noun, name: item_name) if property == 'purpose'

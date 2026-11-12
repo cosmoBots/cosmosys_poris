@@ -72,8 +72,8 @@ en:
         command_effect: Expected command effect
         command_effect_of: Expected effect of command %{name}
         command_purpose: Purpose of the command
-        enum_default: Default value
-        enum_default_of: Default value of %{name}
+        enum_default: Value
+        enum_default_of: Value of %{name}
         enum_meaning: Meaning
         generic: '%{description} (%{noun} %{name})'
         meaning_of: Meaning of the %{subject} %{name}
