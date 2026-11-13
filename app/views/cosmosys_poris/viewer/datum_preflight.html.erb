@@ -31,20 +31,24 @@
   <% end %>
 
   <% if @datum_plan.datums.any? %>
+    <% existing_by_key = @datum_refresh_entries.to_h { |entry| [entry[:item].csid.downcase, entry[:item]] } %>
     <table class="list">
       <thead>
         <tr>
           <th>csID</th>
           <th><%= t('cosmosys_poris.datums.source') %></th>
           <th><%= t('cosmosys_poris.datums.existing') %></th>
+          <th><%= t('cosmosys_poris.datums.current_value') %></th>
         </tr>
       </thead>
       <tbody>
         <% @datum_plan.datums.sort_by { |datum| datum[:key].downcase }.each do |datum| %>
+          <% existing = existing_by_key[datum[:key].downcase] %>
           <tr>
-            <td><code><%= datum[:key] %></code></td>
+            <td><code><%= existing ? link_to(datum[:key], issue_path(existing)) : datum[:key] %></code></td>
             <td><%= datum.fetch(:subject) %></td>
             <td><%= @datum_plan.existing.any? { |entry| entry[:key].casecmp?(datum[:key]) } ? t('cosmosys_poris.datums.existing') : t('cosmosys_poris.datums.missing') %></td>
+            <td><%= existing ? existing.csys_value : '—' %></td>
           </tr>
         <% end %>
       </tbody>

@@ -28,5 +28,11 @@ module CosmosysPoris
       source = item.csid.presence || "POR_#{item.id}"
       "#{source.gsub(/[^A-Za-z0-9]+/, '_').gsub(/\A_+|_+\z/, '')}_#{property}"
     end
+
+    def self.description(definition)
+      I18n.t('cosmosys_poris.datums.generated_description',
+        source: definition.fetch(:source_csid), property: definition.fetch(:property),
+        key: definition.fetch(:key))
+    end
   end
 end

@@ -182,7 +182,7 @@ es:
         divider: "\n\n---\n\n"
       shared_datums:
         empty: "## csDatum compartidos\n\nNo se requieren datos pendientes para este alcance.\n\n---\n"
-        entry: '- %{reference}'
+        entry: '- %{reference} — %{description}; valor: **${%{key}.value}**.'
         missing: Sin generar
         list: "## csDatum compartidos\n\n%{entries}\n\n---\n"
       topic:
@@ -278,6 +278,7 @@ es:
       review_refresh: Revisar / refrescar textos de datos existentes
       refresh_help: 'Selecciona los datos existentes cuyos asuntos quieras refrescar desde el ítem PORIS actual. Se conservan valores, identificadores y enlaces. Las descripciones sólo se sustituyen si lo marcas expresamente; revisa los textos personalizados antes de reemplazarlos.'
       current_subject: Asunto actual
+      current_value: Valor actual
       proposed_subject: Asunto propuesto
       current_text: Texto actual
       proposed_text: Texto propuesto
@@ -297,6 +298,6 @@ es:
       existing: Ya definido
       missing: Por crear
       created_notice: 'Se han creado %{created} csDatum y se han conservado %{existing} definiciones existentes en %{project}.'
-      generated_description: 'Generado desde el elemento PORIS %{source}, propiedad %{property}.'
+      generated_description: 'Generado desde el elemento PORIS #%{source}, propiedad %{property}; valor actual: ${%{key}.value}.'
       csid_conflict: 'Estos csID ya pertenecen a elementos que no son csDatum y no se pueden generar: %{keys}.'
       no_targets: No hay ningún proyecto de este árbol disponible como destino de csDatum para tu cuenta.

@@ -1,5 +1,6 @@
 module CosmosysPoris
-  # Navigation to definitions, not expression evaluation or dictionary usage.
+  # Link definitions without expression syntax in the label. The value remains
+  # an ordinary expression for the host renderer to resolve as before.
   module DatumPreviewList
     def self.render(datums, project:, user:)
       prefix = 'cosmosys_poris.spec_preview.shared_datums'
@@ -16,7 +17,7 @@ module CosmosysPoris
         else
           "`#{key}` — #{I18n.t("#{prefix}.missing")}"
         end
-        I18n.t("#{prefix}.entry", reference: reference)
+        I18n.t("#{prefix}.entry", reference: reference, key: key, description: datum[:description])
       end
       I18n.t("#{prefix}.list", entries: entries.join("\n"))
     end

@@ -101,7 +101,7 @@ module CosmosysPoris
     end
 
     def provenance_description(datum)
-      I18n.t('cosmosys_poris.datums.generated_description', source: datum[:source_csid], property: datum[:property])
+      ProjectDatumReference.description(datum)
     end
   end
 end

@@ -182,7 +182,7 @@ en:
         divider: "\n\n---\n\n"
       shared_datums:
         empty: "## Shared csDatum\n\nNo pending data is required for this scope.\n\n---\n"
-        entry: '- %{reference}'
+        entry: '- %{reference} — %{description}; value: **${%{key}.value}**.'
         missing: Not generated
         list: "## Shared csDatum\n\n%{entries}\n\n---\n"
       topic:
@@ -278,6 +278,7 @@ en:
       review_refresh: Review / refresh existing data texts
       refresh_help: 'Select existing data to refresh their subjects from the current PORIS item. Values, identifiers and links are preserved. Descriptions are only replaced if explicitly selected; review customized texts before replacing them.'
       current_subject: Current subject
+      current_value: Current value
       proposed_subject: Proposed subject
       current_text: Current text
       proposed_text: Proposed text
@@ -297,6 +298,6 @@ en:
       existing: Already defined
       missing: To create
       created_notice: 'Created %{created} csDatum; preserved %{existing} existing definitions in %{project}.'
-      generated_description: 'Generated from PORIS item %{source}, property %{property}.'
+      generated_description: 'Generated from PORIS item #%{source}, property %{property}; current value: ${%{key}.value}.'
       csid_conflict: 'These csIDs already belong to non-csDatum items and cannot be generated: %{keys}.'
       no_targets: No project in this project tree is available as a csDatum destination for your account.

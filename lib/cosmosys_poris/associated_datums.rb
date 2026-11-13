@@ -64,7 +64,7 @@ module CosmosysPoris
 
     def description(definition)
       @source.project.with_cosmosys_locale do
-        I18n.t('cosmosys_poris.datums.generated_description', source: definition[:source_csid], property: definition[:property])
+        ProjectDatumReference.description(definition)
       end
     end
   end

@@ -241,8 +241,14 @@ The project data-generation page also offers **Refresh existing data** next to
 **Create missing csDatum**. Refresh processes the existing PORIS definitions in
 the displayed list without creating missing ones; the same optional description
 replacement and edit-permission checks apply to the whole batch.
+The list links existing visible csIDs directly to their items and shows their
+current configured values; missing definitions have no link or value yet.
+Generated datum descriptions link back to the PORIS source with `#CSID` and
+show their current value through `${datum_key.value}`. For existing data, use
+the refresh action with description replacement selected to adopt this text.
 Shared-data lists in requirements and validation previews link directly to each
-visible csDatum using its identifier. Definitions not yet generated are marked
+visible csDatum using its identifier, followed by its description and current
+value. Definitions not yet generated are marked
 as such, without a broken link.
 
 Build the model with systems and parameters, their modes, and enumerated,
