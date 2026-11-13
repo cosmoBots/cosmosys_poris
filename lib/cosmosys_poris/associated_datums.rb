@@ -56,8 +56,9 @@ module CosmosysPoris
 
     def fingerprint(entry)
       Digest::SHA256.hexdigest(JSON.generate([
-        @source.id, @source.subject, @source.updated_on&.iso8601(6),
-        entry[:item].id, entry[:item].subject, entry[:item].description,
+        @source.id, @source.subject, @source.updated_on&.iso8601(6), @source.lock_version,
+        entry[:item].id, entry[:item].subject, entry[:item].description, entry[:item].csys_value,
+        entry[:item].lock_version,
         entry[:item].updated_on&.iso8601(6), entry[:definition]
       ]))
     end
