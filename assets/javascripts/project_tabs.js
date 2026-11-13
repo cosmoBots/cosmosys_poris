@@ -7,10 +7,48 @@
     var body = table && table.querySelector('tbody');
     var runtimePanel = root.querySelector('#porisRuntimeState');
     if (!runner || !button || !status || !table || !body) return;
+    var delayInput = runner.querySelector('[data-validation-delay]');
+    var progress = runner.querySelector('[data-validation-progress]');
+    var summary = runner.querySelector('[data-validation-summary]');
+    var outcomes = new Map();
+    var segments = new Map();
 
     var interpolate = function(template, values) {
       return template.replace(/%\{(\w+)\}/g, function(_match, key) { return String(values[key] == null ? '' : values[key]); });
     };
+
+    function updateProgress() {
+      if (!progress) return;
+      var counts = {passed: 0, failed: 0, unverified: 0, skipped: 0};
+      outcomes.forEach(function(outcome) { counts[outcome]++; });
+      runner.querySelectorAll('[data-validation-count]').forEach(function(counter) {
+        counter.textContent = counts[counter.dataset.validationCount];
+      });
+      var executed = outcomes.size - counts.skipped;
+      var text = interpolate(progress.dataset.summaryTemplate, {
+        executed: executed, total: segments.size, remaining: segments.size - outcomes.size
+      });
+      progress.setAttribute('aria-valuemax', segments.size);
+      progress.setAttribute('aria-valuenow', outcomes.size);
+      progress.setAttribute('aria-valuetext', text);
+      if (summary) summary.textContent = text;
+    }
+
+    function resetProgress() {
+      outcomes.clear(); segments.clear();
+      if (!progress) return;
+      progress.replaceChildren();
+      body.querySelectorAll('[data-step-index]').forEach(function(row) {
+        var segment = document.createElement('span');
+        segment.className = 'poris-validation-segment';
+        segment.title = row.querySelector('td').textContent;
+        segment.setAttribute('aria-hidden', 'true');
+        progress.appendChild(segment);
+        segments.set(row.dataset.stepIndex, segment);
+      });
+      updateProgress();
+    }
+    resetProgress();
 
     function renderRuntime(state, operations) {
       var nodes = runtimePanel && runtimePanel.querySelector('#porisRuntimeNodes');
@@ -39,7 +77,7 @@
       });
     }
 
-    function appendResult(result, operations) {
+    function appendResult(result, operations, followProgress = true) {
       var row = body.querySelector('[data-step-index="' + result.index + '"]');
       if (!row) return;
       var log = row.querySelector('.poris-validation-log');
@@ -65,13 +103,39 @@
         queryResult.textContent = 'Query: ' + result.query_description + ' → ' + result.query_expected + ' (' + (result.query_result ? 'true' : 'false') + ')';
         log.appendChild(queryResult);
       }
-      indicator.className = 'poris-validation-result-' + result.status;
+      indicator.className = 'poris-validation-check poris-validation-result-' + result.status;
       indicator.textContent = passed ? '✓' : (failed ? '✗' : (unverified ? '?' : '—'));
       indicator.setAttribute('aria-label', passed ? runner.dataset.passedLabel : (failed ? runner.dataset.failedLabel : (unverified ? runner.dataset.unverifiedLabel : runner.dataset.skippedLabel)));
+      if (segments.has(String(result.index))) {
+        var outcome = ['passed','failed','unverified','skipped'].includes(result.status) ? result.status : 'unverified';
+        outcomes.set(String(result.index), outcome);
+        var segment = segments.get(String(result.index));
+        segment.dataset.outcome = outcome;
+        segment.title = row.querySelector('td').textContent + ': ' + indicator.getAttribute('aria-label');
+        updateProgress();
+      }
+      // Follow progress inside the results region, never scroll the document
+      // (which would move the diagram, CAD and runtime out of sight).
+      var viewport = table.closest('.poris-validation-results-scroll');
+      if (viewport && followProgress) {
+        window.requestAnimationFrame(function() {
+          if (!viewport.isConnected) return;
+          var frame = viewport.getBoundingClientRect();
+          var bounds = row.getBoundingClientRect();
+          var heading = table.tHead ? table.tHead.getBoundingClientRect().height : 0;
+          if (bounds.bottom > frame.bottom || bounds.top < frame.top + heading) {
+            viewport.scrollTop += bounds.top - frame.top - heading;
+          }
+        });
+      }
     }
 
     button.addEventListener('click', function() {
+      if (delayInput && !delayInput.reportValidity()) return;
+      var delayMs = delayInput ? Number(delayInput.value) * 1000 : 500;
       button.disabled = true;
+      if (delayInput) delayInput.disabled = true;
+      resetProgress();
       status.textContent = runner.dataset.runningLabel;
       body.querySelectorAll('tr').forEach(function(row) {
         row.classList.remove('poris-validation-row-failed', 'poris-validation-row-unverified');
@@ -85,8 +149,12 @@
       var operationLog = [];
       var runId = null;
       var hadUnverifiedStep = false;
+      function finish() {
+        button.disabled = false;
+        if (delayInput) delayInput.disabled = false;
+      }
       function runStep(stepIndex) {
-        var startedAt = Date.now();
+        if (!runner.isConnected) return;
         window.fetch(runner.dataset.runUrl, {
           method: 'POST',
           credentials: 'same-origin',
@@ -109,20 +177,20 @@
           operationLog = operationLog.concat(payload.operations || []);
           renderRuntime(payload.state || [], operationLog);
           document.dispatchEvent(new CustomEvent('poris:runtime-confirmed', {detail: payload}));
-          (payload.skipped || []).forEach(function(skipped) { appendResult(skipped, []); });
+          (payload.skipped || []).forEach(function(skipped) { appendResult(skipped, [], false); });
           if (payload.result.status === 'unverified') hadUnverifiedStep = true;
           if (payload.result.status === 'failed') {
             status.textContent = runner.dataset.failedLabel;
-            button.disabled = false;
+            finish();
           } else if (payload.complete) {
             status.textContent = hadUnverifiedStep ? runner.dataset.unverifiedLabel : runner.dataset.passedLabel;
-            button.disabled = false;
+            finish();
           } else {
-            window.setTimeout(function() { runStep(stepIndex + 1); }, Math.max(0, 500 - (Date.now() - startedAt)));
+            window.setTimeout(function() { runStep(stepIndex + 1); }, delayMs);
           }
         }).catch(function(error) {
           status.textContent = error.message;
-          button.disabled = false;
+          finish();
         });
       }
       runStep(0);
@@ -199,7 +267,7 @@
 
     var initialUrl = new URL(content.dataset.initialUrl, window.location.href);
     var initialTab = initialUrl.searchParams.get('tab') || 'configuration';
-    var initialLink = nav && nav.querySelector('[data-tab="' + initialTab + '"]');
+    var initialLink = nav && (nav.querySelector('[aria-current="page"]') || nav.querySelector('[data-tab="' + initialTab + '"]'));
     selectLink(initialLink, false);
   }
 

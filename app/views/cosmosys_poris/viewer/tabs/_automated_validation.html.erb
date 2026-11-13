@@ -9,8 +9,22 @@
          data-unverified-label="<%= l(:label_cosmosys_poris_run_unverified) %>"
          data-skipped-label="<%= l(:label_cosmosys_poris_run_skipped) %>"
          data-running-label="<%= l(:text_cosmosys_poris_run_in_progress) %>">
-      <button type="button" class="button" id="runPorisValidation"><%= l(:label_cosmosys_poris_run_validation) %></button>
+      <div class="poris-validation-actions">
+        <button type="button" class="button" id="runPorisValidation"><%= l(:label_cosmosys_poris_run_validation) %></button>
+        <label><%= l(:label_cosmosys_poris_step_delay) %>
+          <input type="number" data-validation-delay min="0" max="60" step="0.1" value="0.5" required>
+        </label>
+      </div>
+      <div data-validation-progress role="progressbar" aria-label="<%= l(:label_cosmosys_poris_validation_progress) %>" aria-valuemin="0" aria-valuenow="0" aria-valuemax="<%= @ruby_code_preview.validation_steps.size %>"
+           data-summary-template="<%= l(:text_cosmosys_poris_validation_progress) %>"></div>
+      <p data-validation-summary aria-live="polite"></p>
+      <div class="poris-validation-counts">
+        <% %w[passed failed unverified skipped].each do |outcome| %>
+          <span class="poris-validation-count-<%= outcome %>"><%= l("label_cosmosys_poris_run_#{outcome}") %>: <strong data-validation-count="<%= outcome %>">0</strong></span>
+        <% end %>
+      </div>
       <p class="poris-validation-runner-status" id="porisValidationRunStatus" role="status" aria-live="polite"></p>
+      <div class="poris-validation-results-scroll" tabindex="0" role="region" aria-label="<%= l(:label_cosmosys_poris_tab_automated_validation) %>">
       <table class="list poris-validation-results" id="porisValidationResults">
         <thead><tr><th>ID</th><th><%= l(:label_cosmosys_poris_validation_code) %></th><th><%= l(:label_cosmosys_poris_validation_log) %></th><th><%= l(:label_cosmosys_poris_validation_check) %></th></tr></thead>
         <tbody>
@@ -28,6 +42,7 @@
           <% end %>
         </tbody>
       </table>
+      </div>
     </div>
     <p class="help"><%= l(:text_cosmosys_poris_code_preview_limitations) %></p>
   </section>

@@ -7,7 +7,7 @@
 
 .poris-project-layout-with-runtime-sidebar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(18em, 26em);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.5em;
   align-items: start;
 }
@@ -22,11 +22,54 @@
 }
 
 @media (min-width: 1101px) {
+  .poris-project-layout-with-runtime-sidebar > .poris-project-code-tab {
+    box-sizing: border-box;
+    max-height: calc(100vh - 200px);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .poris-project-layout-with-runtime-sidebar .poris-validation-runner {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .poris-project-layout-with-runtime-sidebar .poris-validation-runner > button {
+    align-self: flex-start;
+  }
+  .poris-project-layout-with-runtime-sidebar .poris-project-runtime-sidebar {
+    max-height: calc(100vh - 200px);
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
   .poris-project-layout-with-diagram > .poris-project-viewer,
   .poris-project-layout-with-diagram > .poris-project-diagram {
     max-height: calc(100vh - 200px);
     overflow: auto;
     overscroll-behavior: contain;
+  }
+}
+
+.poris-validation-results-scroll {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  max-height: 65vh;
+}
+
+.poris-validation-results-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #eee;
+}
+
+@media print {
+  .poris-project-layout-with-runtime-sidebar > .poris-project-code-tab,
+  .poris-project-layout-with-runtime-sidebar .poris-project-runtime-sidebar,
+  .poris-validation-results-scroll {
+    max-height: none;
+    overflow: visible;
   }
 }
 
@@ -123,6 +166,28 @@
 .poris-validation-runner {
   margin: 0.75em 0 1.25em;
 }
+
+.poris-validation-actions,
+.poris-validation-counts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5em 1em;
+  flex-shrink: 0;
+}
+.poris-validation-actions input { width: 5em; }
+[data-validation-progress] { display: flex;min-height: 1em;margin-top: .8em;flex-shrink: 0;background: #eee; }
+.poris-validation-segment { flex: 1 1 0;min-width: 0;background: #eee;border-right: 1px solid white; }
+.poris-validation-segment[data-outcome="passed"] { background: #188038; }
+.poris-validation-segment[data-outcome="failed"] { background: #c5221f; }
+.poris-validation-segment[data-outcome="unverified"] { background: #e9a916; }
+.poris-validation-segment[data-outcome="skipped"] { background: #888; }
+.poris-validation-count-passed { color: #188038; }
+.poris-validation-count-failed { color: #c5221f; }
+.poris-validation-count-unverified { color: #8a6d3b; }
+.poris-validation-count-skipped { color: #666; }
+[data-validation-summary] { margin: .5em 0; }
+.poris-validation-counts { margin-bottom: .5em; }
 
 .poris-validation-results td:last-child {
   width: 5em;

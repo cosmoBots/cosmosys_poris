@@ -256,8 +256,18 @@ numeric or text values. PORIS `precedes` relations determine which alternatives
 a mode enables; their priority determines the order of eligible alternatives.
 
 The project page provides configuration, requirements, validation-plan, Ruby
-constructor and automated-validation tabs. Numeric fields offer a floating
-slider on focus while retaining keyboard entry and fine-step arrows. Both
+constructor and automated-validation tabs.
+
+Automated validation uses equally wide result and runtime panels on desktop.
+The results table scrolls independently, keeping the controls and progress
+visible. Set the pause between steps from 0 to 60 seconds (default 0.5); it is
+fixed for the current run. The progress bar marks passed steps green, failures
+red, unverified results amber and skipped steps grey, with separate counters
+and executed/remaining totals. A failure stops the run and keeps that step in
+view. Narrow screens stack the panels.
+
+Numeric fields offer a floating slider on focus while retaining keyboard entry
+and fine-step arrows. Both
 edit the same value within the selected PORIS value's bounds; Escape or leaving
 the control hides the slider. Moving it does not commit or execute a command.
 **Commit** applies the current

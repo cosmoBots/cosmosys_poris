@@ -37,6 +37,9 @@ es:
   label_cosmosys_poris_validation_code: Código
   label_cosmosys_poris_validation_log: Registro
   label_cosmosys_poris_validation_check: Check
+  label_cosmosys_poris_step_delay: Pausa entre pasos (s)
+  label_cosmosys_poris_validation_progress: Progreso de la validación
+  text_cosmosys_poris_validation_progress: 'Ejecutados %{executed} / %{total}; pendientes %{remaining}.'
   text_cosmosys_poris_run_in_progress: Ejecutando el plan generado contra el runtime PORIS de esta sesión…
   label_cosmosys_poris_runtime_state: Estado del runtime PORIS (esta sesión)
   label_cosmosys_poris_runtime_operations: Operaciones enviadas al runtime PORIS
