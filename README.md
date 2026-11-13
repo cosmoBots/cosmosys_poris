@@ -31,7 +31,7 @@ Paste a complete PORIS preview YAML between the opening and closing lines,
 starting the body at column zero. The diagram is static and also works in report
 exports; no interactive viewer is required.
 
-Version **0.2.7-dirty** (development).
+Version **0.2.7** (experimental).
 
 The runtime resolves an enumerated value's associated data from its project
 variable `<normalized-CSID>_default`, the same key used in generated
@@ -130,7 +130,7 @@ cosmoSys PORIS requires the [cosmoSys](https://github.com/cosmoBots/cosmoSys)
 plugin. Both are licensed under GPLv3 by cosmoBots.eu.
 
 It is developed and validated against **Redmine 7.0.1** (Rails 8). It declares
-`requires_redmine_plugin :cosmosys, version_or_higher: '0.2.10'`, so Redmine
+`requires_redmine_plugin :cosmosys, version_or_higher: '0.2.11'`, so Redmine
 refuses to start it unless the installed cosmoSys version satisfies that
 constraint.
 
