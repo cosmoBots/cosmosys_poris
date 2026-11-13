@@ -231,7 +231,11 @@ numeric or text values. PORIS `precedes` relations determine which alternatives
 a mode enables; their priority determines the order of eligible alternatives.
 
 The project page provides configuration, requirements, validation-plan, Ruby
-constructor and automated-validation tabs. **Commit** applies the current
+constructor and automated-validation tabs. Numeric fields offer a floating
+slider on focus while retaining keyboard entry and fine-step arrows. Both
+edit the same value within the selected PORIS value's bounds; Escape or leaving
+the control hides the slider. Moving it does not commit or execute a command.
+**Commit** applies the current
 configuration to the session runtime. **Run** prepares a validation plan once,
 then executes its steps in sequence and checks their expected results. Failed
 checks stop the run; steps whose expected outcome is not defined are marked
