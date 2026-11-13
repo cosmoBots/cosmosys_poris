@@ -237,6 +237,14 @@ option: review custom text before choosing it. Refresh requires edit permission
 on every selected datum and refuses a stale preview. Nothing is regenerated,
 deleted or refreshed just by visiting the item.
 
+The project data-generation page also offers **Refresh existing data** next to
+**Create missing csDatum**. Refresh processes the existing PORIS definitions in
+the displayed list without creating missing ones; the same optional description
+replacement and edit-permission checks apply to the whole batch.
+Shared-data lists in requirements and validation previews link directly to each
+visible csDatum using its identifier. Definitions not yet generated are marked
+as such, without a broken link.
+
 Build the model with systems and parameters, their modes, and enumerated,
 numeric or text values. PORIS `precedes` relations determine which alternatives
 a mode enables; their priority determines the order of eligible alternatives.

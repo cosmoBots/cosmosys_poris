@@ -182,7 +182,8 @@ es:
         divider: "\n\n---\n\n"
       shared_datums:
         empty: "## csDatum compartidos\n\nNo se requieren datos pendientes para este alcance.\n\n---\n"
-        entry: '- `${%{key}.value}` — %{description}; valor: **${%{key}.value}**.'
+        entry: '- %{reference}'
+        missing: Sin generar
         list: "## csDatum compartidos\n\n%{entries}\n\n---\n"
       topic:
         parameter_required_modes: Modos necesarios del parámetro %{parameter}
@@ -282,6 +283,8 @@ es:
       proposed_text: Texto propuesto
       refresh_descriptions: Sustituir también las descripciones por el texto de procedencia generado
       refresh_submit: Refrescar textos de los datos seleccionados
+      refresh_existing: Refrescar datos existentes
+      refresh_existing_help: 'Refresca los asuntos de los datos PORIS existentes del listado, sin crear los que faltan ni cambiar valores. Para sustituir también sus descripciones, marca la opción anterior. Requiere permiso de edición sobre todos ellos.'
       cancel_refresh: Volver al ítem PORIS
       refresh_none: Selecciona al menos un dato existente.
       refresh_stale: 'El origen o los datos han cambiado desde esta previsualización. Revisa la nueva propuesta antes de confirmar.'

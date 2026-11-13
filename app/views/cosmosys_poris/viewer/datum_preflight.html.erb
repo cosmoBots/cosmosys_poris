@@ -17,6 +17,16 @@
       <%= t('text_cosmosys_poris_preview_not_saved') %>
     </p>
     <%= submit_tag t('cosmosys_poris.datums.submit'), class: 'button' %>
+    <% if @datum_refresh_entries.any? %>
+      <% @datum_refresh_entries.each do |entry| %>
+        <%= hidden_field_tag "expected[#{entry[:item].id}]", CosmosysPoris::AssociatedDatums.new(entry[:source], user: User.current).fingerprint(entry) %>
+      <% end %>
+      <%= submit_tag t('cosmosys_poris.datums.refresh_existing'), class: 'button',
+        formaction: refresh_project_poris_datums_path(@project),
+        disabled: @datum_refresh_entries.any? { |entry| !entry[:item].editable?(User.current) } %>
+      <p><label><%= check_box_tag :refresh_descriptions, '1', false %> <%= t('cosmosys_poris.datums.refresh_descriptions') %></label></p>
+      <p class="help"><%= t('cosmosys_poris.datums.refresh_existing_help') %></p>
+    <% end %>
     <%= link_to t('cosmosys_poris.datums.cancel'), project_poris_viewer_path(@project), class: 'button' %>
   <% end %>
 

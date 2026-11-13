@@ -1,4 +1,5 @@
 require 'set'
+require_relative 'datum_preview_list'
 
 module CosmosysPoris
   class ProjectSpecPreview
@@ -53,12 +54,7 @@ module CosmosysPoris
     private
 
     def datums_markdown(datums)
-      return I18n.t('cosmosys_poris.spec_preview.shared_datums.empty') if datums.empty?
-
-      entries = datums.sort_by { |datum| datum[:key].downcase }.map do |datum|
-        I18n.t('cosmosys_poris.spec_preview.shared_datums.entry', key: datum[:key], description: datum[:description])
-      end
-      I18n.t('cosmosys_poris.spec_preview.shared_datums.list', entries: entries.join("\n"))
+      DatumPreviewList.render(datums, project: @project, user: @user)
     end
 
     def roots_body(previews, body_attribute, kind)

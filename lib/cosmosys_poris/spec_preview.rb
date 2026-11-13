@@ -1,4 +1,5 @@
 require_relative 'project_datum_reference'
+require_relative 'datum_preview_list'
 
 module CosmosysPoris
   class SpecPreview
@@ -914,12 +915,7 @@ module CosmosysPoris
     end
 
     def datums_markdown
-      return tr('shared_datums.empty') if @datums.empty?
-
-      entries = @datums.values.sort_by { |datum| datum[:key] }.map do |datum|
-        tr('shared_datums.entry', key: datum[:key], description: datum[:description])
-      end
-      tr('shared_datums.list', entries: entries.join("\n"))
+      DatumPreviewList.render(@datums.values, project: @locale_project, user: @user)
     end
 
     def enumerated_value_table(values)

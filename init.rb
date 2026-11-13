@@ -11,7 +11,7 @@ Redmine::Plugin.register :cosmosys_poris do
   requires_redmine_plugin :cosmosys, version_or_higher: '0.2.10'
 
   permission :view_poris_model,
-             { 'cosmosys_poris/viewer' => %i[show model panel tab issue_preview issue_sidebar commit run_validation datum_preflight generate_datums issue_datums refresh_issue_datums] },
+             { 'cosmosys_poris/viewer' => %i[show model panel tab issue_preview issue_sidebar commit run_validation datum_preflight generate_datums issue_datums refresh_issue_datums refresh_project_datums] },
              public: true,
              read: true
 

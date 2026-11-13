@@ -36,6 +36,7 @@ module CosmosysPoris
 
       @target_project = selected_datum_target
       @datum_plan = ProjectDatumGenerator.new(@project, user: User.current).plan(target_project: @target_project)
+      @datum_refresh_entries = ProjectDatumGenerator.new(@project, user: User.current).refresh_entries(@datum_plan)
     end
 
     def generate_datums
@@ -56,6 +57,21 @@ module CosmosysPoris
       @associated_datums = AssociatedDatums.new(@issue, user: User.current)
       @associated_entries = @associated_datums.entries
       response.headers['Cache-Control'] = 'private, no-store'
+    end
+
+    def refresh_project_datums
+      load_datum_targets
+      target_project = selected_datum_target
+      # Only canonical data IDs re-resolved from the current plan are accepted.
+      generator = ProjectDatumGenerator.new(@project, user: User.current)
+      keys = params[:expected].is_a?(ActionController::Parameters) ? params[:expected].keys.grep(/\A[0-9]+\z/) : []
+      stamps = params[:expected].is_a?(ActionController::Parameters) ? params[:expected].permit(*keys).to_h : {}
+      result = generator.refresh(target_project: target_project, expected: stamps,
+        descriptions: params[:refresh_descriptions] == '1')
+      redirect_to project_poris_datum_preflight_path(@project, target_project_id: target_project.id),
+        notice: I18n.t('cosmosys_poris.datums.refreshed', count: result.size)
+    rescue ArgumentError, ActiveRecord::RecordInvalid => error
+      redirect_to project_poris_datum_preflight_path(@project, target_project_id: params[:target_project_id]), alert: error.message
     end
 
     def refresh_issue_datums

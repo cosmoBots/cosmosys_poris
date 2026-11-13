@@ -182,7 +182,8 @@ en:
         divider: "\n\n---\n\n"
       shared_datums:
         empty: "## Shared csDatum\n\nNo pending data is required for this scope.\n\n---\n"
-        entry: '- `${%{key}.value}` — %{description}; value: **${%{key}.value}**.'
+        entry: '- %{reference}'
+        missing: Not generated
         list: "## Shared csDatum\n\n%{entries}\n\n---\n"
       topic:
         parameter_required_modes: Required modes of parameter %{parameter}
@@ -282,6 +283,8 @@ en:
       proposed_text: Proposed text
       refresh_descriptions: Also replace descriptions with the generated provenance text
       refresh_submit: Refresh selected data texts
+      refresh_existing: Refresh existing data
+      refresh_existing_help: 'Refresh subjects of existing PORIS data in this list, without creating missing data or changing values. To replace their descriptions too, select the option above. Requires edit permission on all of them.'
       cancel_refresh: Back to the PORIS item
       refresh_none: Select at least one existing datum.
       refresh_stale: 'The source or data changed since this preview. Review the refreshed preview before confirming.'
