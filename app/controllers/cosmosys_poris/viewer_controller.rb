@@ -50,6 +50,25 @@ module CosmosysPoris
       redirect_to project_poris_datum_preflight_path(@project, target_project_id: params[:target_project_id]), alert: error.message
     end
 
+    def issue_datums
+      raise ActiveRecord::RecordNotFound unless @issue
+
+      @associated_datums = AssociatedDatums.new(@issue, user: User.current)
+      @associated_entries = @associated_datums.entries
+      response.headers['Cache-Control'] = 'private, no-store'
+    end
+
+    def refresh_issue_datums
+      raise ActiveRecord::RecordNotFound unless @issue
+
+      stamps = params[:expected].is_a?(ActionController::Parameters) ? params[:expected].permit(*Array(params[:datum_ids]).map(&:to_s)).to_h : {}
+      result = AssociatedDatums.new(@issue, user: User.current).refresh(
+        ids: params[:datum_ids], descriptions: params[:refresh_descriptions] == '1', expected: stamps)
+      redirect_to poris_issue_datums_path(@project, @issue), notice: I18n.t('cosmosys_poris.datums.refreshed', count: result.size)
+    rescue ArgumentError, ActiveRecord::RecordInvalid => error
+      redirect_to poris_issue_datums_path(@project, @issue), alert: error.message
+    end
+
     def model
       response.headers['Cache-Control'] = 'no-store'
       render xml: ModelXmlExporter.new(@project, user: User.current, scope: @scope, issue: @issue).render,

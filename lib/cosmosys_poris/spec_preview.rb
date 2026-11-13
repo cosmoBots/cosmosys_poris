@@ -52,6 +52,16 @@ module CosmosysPoris
       end
     end
 
+    # Metadata only: no model traversal or requirement/validation generation.
+    def datum_definition(property)
+      label = ProjectDatumReference.properties(@issue)[property.to_s]
+      return unless label
+
+      @locale_project.with_cosmosys_locale do
+        missing_datum(@issue, property.to_s, tr("datum.#{label}"))
+      end
+    end
+
     private
 
     attr_reader :issue, :user
@@ -852,6 +862,7 @@ module CosmosysPoris
         key: key,
         subject: datum_description(item, property, description, markdown: false),
         description: datum_description(item, property, description),
+        source_id: item.id,
         source_csid: item.csid,
         source_subject: item.subject,
         property: property

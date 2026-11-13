@@ -11,7 +11,7 @@ Redmine::Plugin.register :cosmosys_poris do
   requires_redmine_plugin :cosmosys, version_or_higher: '0.2.10'
 
   permission :view_poris_model,
-             { 'cosmosys_poris/viewer' => %i[show model panel tab issue_preview issue_sidebar commit run_validation datum_preflight generate_datums] },
+             { 'cosmosys_poris/viewer' => %i[show model panel tab issue_preview issue_sidebar commit run_validation datum_preflight generate_datums issue_datums refresh_issue_datums] },
              public: true,
              read: true
 
@@ -30,6 +30,7 @@ require_dependency 'tracker'
 require_dependency File.expand_path('lib/cosmosys_poris/profile_registration', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/model_yaml_dialect', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/issue_patch', __dir__)
+require_dependency File.expand_path('lib/cosmosys_poris/associated_datums', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/ods_fields', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/issue_relation_patch', __dir__)
 require_dependency File.expand_path('lib/cosmosys_poris/option_relations', __dir__)

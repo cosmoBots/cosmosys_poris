@@ -27,6 +27,10 @@ post 'projects/:project_id/poris/validation/run',
 get 'projects/:project_id/poris/datums',
     to: 'cosmosys_poris/viewer#datum_preflight',
     as: 'project_poris_datum_preflight'
+get 'projects/:project_id/poris/issues/:issue_id/datums',
+    to: 'cosmosys_poris/viewer#issue_datums', as: 'poris_issue_datums'
+post 'projects/:project_id/poris/issues/:issue_id/datums/refresh',
+     to: 'cosmosys_poris/viewer#refresh_issue_datums', as: 'refresh_poris_issue_datums'
 post 'projects/:project_id/poris/datums',
      to: 'cosmosys_poris/viewer#generate_datums',
      as: 'generate_project_poris_datums'

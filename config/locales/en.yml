@@ -269,6 +269,23 @@ en:
           invoke_command: 'Invoke command %{command} of %{container}.'
           invoke_model_command: 'Invoke command %{command}.'
     datums:
+      associated_title: PORIS specification data
+      associated_help: 'Associated definitions, not references used in this description or in reports.'
+      expressions: Expressions
+      copy: Copy
+      copied: Copied
+      review_refresh: Review / refresh existing data texts
+      refresh_help: 'Select existing data to refresh their subjects from the current PORIS item. Values, identifiers and links are preserved. Descriptions are only replaced if explicitly selected; review customized texts before replacing them.'
+      current_subject: Current subject
+      proposed_subject: Proposed subject
+      current_text: Current text
+      proposed_text: Proposed text
+      refresh_descriptions: Also replace descriptions with the generated provenance text
+      refresh_submit: Refresh selected data texts
+      cancel_refresh: Back to the PORIS item
+      refresh_none: Select at least one existing datum.
+      refresh_stale: 'The source or data changed since this preview. Review the refreshed preview before confirming.'
+      refreshed: 'Texts refreshed for %{count} existing data definitions. Values and identifiers were preserved.'
       title: Generate shared csDatum
       target_project: Destination project
       submit: Create missing csDatum

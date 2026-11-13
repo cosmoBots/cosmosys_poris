@@ -1,0 +1,31 @@
+<h2><%= t('cosmosys_poris.datums.review_refresh') %>: <%= link_to "#{@issue.csid} — #{@issue.subject}", issue_path(@issue) %></h2>
+<p class="warning"><%= t('cosmosys_poris.datums.refresh_help') %></p>
+<%= form_tag refresh_poris_issue_datums_path(@project, @issue), method: :post do %>
+  <table class="list">
+    <thead><tr><th></th><th>csID</th><th><%= t('cosmosys_poris.datums.current_subject') %></th><th><%= t('cosmosys_poris.datums.proposed_subject') %></th></tr></thead>
+    <tbody>
+      <% @associated_entries.each do |entry| %>
+        <% datum, definition = entry.values_at(:item, :definition) %>
+        <tr>
+          <td>
+            <% if datum.editable?(User.current) %>
+              <%= check_box_tag 'datum_ids[]', datum.id, false, aria: {label: datum.csid} %>
+              <%= hidden_field_tag "expected[#{datum.id}]", @associated_datums.fingerprint(entry) %>
+            <% end %>
+          </td>
+          <td><%= link_to datum.csid, issue_path(datum) %></td>
+          <td><%= datum.subject %></td><td><%= definition[:subject].truncate(255) %></td>
+        </tr>
+        <tr><td></td><td colspan="3">
+          <details><summary><%= l(:field_description) %></summary>
+            <p><strong><%= t('cosmosys_poris.datums.current_text') %></strong></p><pre><%= datum.description %></pre>
+            <p><strong><%= t('cosmosys_poris.datums.proposed_text') %></strong></p><pre><%= @associated_datums.description(definition) %></pre>
+          </details>
+        </td></tr>
+      <% end %>
+    </tbody>
+  </table>
+  <p><label><%= check_box_tag :refresh_descriptions, '1', false %> <%= t('cosmosys_poris.datums.refresh_descriptions') %></label></p>
+  <%= submit_tag t('cosmosys_poris.datums.refresh_submit') %>
+  <%= link_to t('cosmosys_poris.datums.cancel_refresh'), issue_path(@issue) %>
+<% end %>

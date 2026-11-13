@@ -226,6 +226,17 @@ editing plugin revisions inside a running container.
 
 ## Using PORIS
 
+Items show a separate **PORIS specification data** table linking their existing
+csDatum definitions and offering literal name/value expressions to copy. These
+associations do not count as references used in descriptions or reports.
+
+From that table, **Review / refresh existing data texts** previews current and
+proposed subjects. Select the existing definitions to refresh; configured values,
+CSIDs and links are preserved. Replacing descriptions is a separate unchecked
+option: review custom text before choosing it. Refresh requires edit permission
+on every selected datum and refuses a stale preview. Nothing is regenerated,
+deleted or refreshed just by visiting the item.
+
 Build the model with systems and parameters, their modes, and enumerated,
 numeric or text values. PORIS `precedes` relations determine which alternatives
 a mode enables; their priority determines the order of eligible alternatives.

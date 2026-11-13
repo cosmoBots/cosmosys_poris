@@ -1,0 +1,37 @@
+<% if issue.cosmosys_poris? %>
+  <% associated = CosmosysPoris::AssociatedDatums.new(issue, user: User.current).entries %>
+  <% if associated.any? %>
+    <div class="box cosmosys-poris-associated-datums">
+      <h3><%= t('cosmosys_poris.datums.associated_title') %></h3>
+      <p class="info"><%= t('cosmosys_poris.datums.associated_help') %></p>
+      <table class="list">
+        <thead><tr>
+          <th><%= t('cosmosys_poris.datums.source') %></th><th>csID</th>
+          <th><%= l(:field_subject) %></th><th><%= l(:field_cosmosys_datum_value) %></th>
+          <th><%= t('cosmosys_poris.datums.expressions') %></th>
+        </tr></thead>
+        <tbody>
+          <% associated.each do |entry| %>
+            <% datum, definition = entry.values_at(:item, :definition) %>
+            <tr data-poris-associated-datum="<%= datum.id %>">
+              <td><%= definition[:property] %></td>
+              <td><%= link_to datum.csid, issue_path(datum) %></td>
+              <td><%= datum.subject %></td><td><%= datum.csys_value %></td>
+              <td>
+                <% ["${#{datum.csid}}", "${#{datum.csid}.value}"].each do |expression| %>
+                  <div><code><%= expression %></code>
+                    <button type="button" data-poris-copy-expression="<%= expression %>"
+                      data-copied-label="<%= t('cosmosys_poris.datums.copied') %>"><%= t('cosmosys_poris.datums.copy') %></button>
+                  </div>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <% if issue.project.csys_project_profile == 'poris' && associated.any? { |entry| entry[:item].editable?(User.current) } %>
+        <p><%= link_to t('cosmosys_poris.datums.review_refresh'), poris_issue_datums_path(issue.project, issue) %></p>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>

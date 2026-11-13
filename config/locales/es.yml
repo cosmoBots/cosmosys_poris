@@ -269,6 +269,23 @@ es:
           invoke_command: 'Invocar el comando %{command} de %{container}.'
           invoke_model_command: 'Invocar el comando %{command}.'
     datums:
+      associated_title: Datos de especificación PORIS
+      associated_help: 'Definiciones asociadas, no referencias utilizadas en esta descripción ni en informes.'
+      expressions: Expresiones
+      copy: Copiar
+      copied: Copiado
+      review_refresh: Revisar / refrescar textos de datos existentes
+      refresh_help: 'Selecciona los datos existentes cuyos asuntos quieras refrescar desde el ítem PORIS actual. Se conservan valores, identificadores y enlaces. Las descripciones sólo se sustituyen si lo marcas expresamente; revisa los textos personalizados antes de reemplazarlos.'
+      current_subject: Asunto actual
+      proposed_subject: Asunto propuesto
+      current_text: Texto actual
+      proposed_text: Texto propuesto
+      refresh_descriptions: Sustituir también las descripciones por el texto de procedencia generado
+      refresh_submit: Refrescar textos de los datos seleccionados
+      cancel_refresh: Volver al ítem PORIS
+      refresh_none: Selecciona al menos un dato existente.
+      refresh_stale: 'El origen o los datos han cambiado desde esta previsualización. Revisa la nueva propuesta antes de confirmar.'
+      refreshed: 'Textos refrescados en %{count} datos existentes. Se han conservado valores e identificadores.'
       title: Generar csDatum compartidos
       target_project: Proyecto de destino
       submit: Crear los csDatum que faltan

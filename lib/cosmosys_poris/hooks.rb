@@ -22,6 +22,8 @@ module CosmosysPoris
               partial: 'hooks/cosmosys_poris/item_fields'
     render_on :view_issues_show_details_bottom,
               partial: 'hooks/cosmosys_poris/item_details'
+    render_on :view_issues_show_description_bottom,
+              partial: 'hooks/cosmosys_poris/associated_datums'
     render_on :view_layouts_base_body_bottom,
               partial: 'hooks/cosmosys_poris/issue_panel_assets'
   end
