@@ -335,14 +335,14 @@ module CosmosysPoris
       when 'float'
         minimum = value.pr_min || datum_reference(value, 'minimum')
         maximum = value.pr_max || datum_reference(value, 'maximum')
-        default = value.pr_default || datum_reference(value, 'default')
+        default = value.pr_default || datum_reference(value, 'value')
         add_float_range_validation_steps(value, parameter, minimum: minimum, maximum: maximum, default: default, mode_context: context)
       when 'enum'
-        missing_datum(value, 'default', tr('datum.enum_default'))
+        missing_datum(value, 'value', tr('datum.enum_default'))
         add_validation(
           tr('validation.step.enum_default_title', name: name(value)),
           stimuli: tr('validation.step.enum_default_stimuli', name: name(value)),
-          expected: tr('validation.step.enum_default_expected', name: name(value), value_default: datum_reference(value, 'default'))
+          expected: tr('validation.step.enum_default_expected', name: name(value), value_default: datum_reference(value, 'value'))
         )
       when 'text'
         missing_datum(value, 'constraints', tr('datum.text_constraints'))
@@ -369,9 +369,9 @@ module CosmosysPoris
         missing_datum(value, 'tolerance', tr('datum.range_tolerance'))
         missing_datum(value, 'minimum', tr('datum.range_minimum')) if value.pr_min.nil?
         missing_datum(value, 'maximum', tr('datum.range_maximum')) if value.pr_max.nil?
-        missing_datum(value, 'default', tr('datum.range_default')) if value.pr_default.nil?
+        missing_datum(value, 'value', tr('datum.range_default')) if value.pr_default.nil?
       when 'enum'
-        missing_datum(value, 'default', tr('datum.enum_default'))
+        missing_datum(value, 'value', tr('datum.enum_default'))
       when 'text'
         missing_datum(value, 'constraints', tr('datum.text_constraints'))
       end
@@ -712,11 +712,11 @@ module CosmosysPoris
       missing_datum(value, 'tolerance', tr('datum.range_tolerance'))
       missing_datum(value, 'minimum', tr('datum.range_minimum')) if value.pr_min.nil?
       missing_datum(value, 'maximum', tr('datum.range_maximum')) if value.pr_max.nil?
-      missing_datum(value, 'default', tr('datum.range_default')) if value.pr_default.nil?
+      missing_datum(value, 'value', tr('datum.range_default')) if value.pr_default.nil?
 
       minimum = value.pr_min || datum_reference(value, 'minimum')
       maximum = value.pr_max || datum_reference(value, 'maximum')
-      default = value.pr_default || datum_reference(value, 'default')
+      default = value.pr_default || datum_reference(value, 'value')
       range = "[#{minimum}…#{maximum}]"
       add_requirement(tr('requirement.active_float_range', context: mode_context, range: range, unit: datum_reference(value, 'unit'), resolution: datum_reference(value, 'resolution')))
       add_requirement(tr('requirement.active_float_default', context: mode_context, range: range, value_default: default))
@@ -737,11 +737,11 @@ module CosmosysPoris
         missing_datum(item, 'bounds_inclusivity', tr('datum.bounds_inclusivity'))
         missing_datum(item, 'minimum', tr('datum.range_minimum')) if item.pr_min.nil?
         missing_datum(item, 'maximum', tr('datum.range_maximum')) if item.pr_max.nil?
-        missing_datum(item, 'default', tr('datum.range_default')) if item.pr_default.nil?
+        missing_datum(item, 'value', tr('datum.range_default')) if item.pr_default.nil?
         missing_datum(item, 'tolerance', tr('datum.range_tolerance'))
         minimum = item.pr_min || datum_reference(item, 'minimum')
         maximum = item.pr_max || datum_reference(item, 'maximum')
-        default = item.pr_default || datum_reference(item, 'default')
+        default = item.pr_default || datum_reference(item, 'value')
         range = [minimum, maximum].join('…')
         add_requirement(tr('requirement.float_range_definition', name: name(item), range: range, unit: datum_reference(item, 'unit'), resolution: datum_reference(item, 'resolution'), value_default: default))
         parameter = @items_by_id[item.parent_issue_id]
@@ -750,7 +750,7 @@ module CosmosysPoris
         missing_datum(item, 'meaning', tr('datum.text_meaning'))
         add_note(tr('note.text_meaning', name: name(item), datum: datum_reference(item, 'meaning')), chapter: name(item))
         missing_datum(item, 'constraints', tr('datum.text_constraints'))
-        missing_datum(item, 'default', tr('datum.text_default')) if item.pr_default_text.blank?
+        missing_datum(item, 'value', tr('datum.text_default')) if item.pr_default_text.blank?
         add_requirement(tr('requirement.text_constraints', name: name(item), constraints: datum_reference(item, 'constraints')))
         add_validation(
           tr('validation.step.text_constraints_title', name: name(item)),
@@ -759,11 +759,11 @@ module CosmosysPoris
         )
       else
         missing_datum(item, 'meaning', tr('datum.enum_meaning'))
-        missing_datum(item, 'default', tr('datum.enum_default'))
+        missing_datum(item, 'value', tr('datum.enum_default'))
         add_validation(
           tr('validation.step.enum_default_title', name: name(item)),
           stimuli: tr('validation.step.enum_default_stimuli', name: name(item)),
-          expected: tr('validation.step.enum_default_expected', name: name(item), value_default: datum_reference(item, 'default'))
+          expected: tr('validation.step.enum_default_expected', name: name(item), value_default: datum_reference(item, 'value'))
         )
       end
     end
@@ -877,14 +877,14 @@ module CosmosysPoris
       return tr('datum.test_case_postconditions_of', noun: noun, name: item_name) if property == 'test_postconditions'
       return tr('datum.purpose_of', noun: noun, name: item_name) if property == 'purpose'
       return tr('datum.range_tolerance_of', name: item_name) if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'float' && property == 'tolerance'
-      return tr('datum.text_default_of', name: item_name) if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'text' && property == 'default'
+      return tr('datum.text_default_of', name: item_name) if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'text' && property == 'value'
       if item.cosmosys_item_kind_key == 'poris_value' && property == 'meaning'
         return tr('datum.meaning_of_enum', name: item_name) if item.pr_value_kind == 'enum'
 
         meaning_subject = item.pr_value_kind == 'float' ? tr('noun.value_range') : tr('noun.text_value')
         return tr('datum.meaning_of', subject: meaning_subject, name: item_name)
       end
-      return tr('datum.enum_default_of', name: item_name) if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'enum' && property == 'default'
+      return tr('datum.enum_default_of', name: item_name) if item.cosmosys_item_kind_key == 'poris_value' && item.pr_value_kind == 'enum' && property == 'value'
       return tr('datum.command_effect_of', name: item_name) if item.cosmosys_item_kind_key == 'poris_cmd' && property == 'effect'
 
       tr('datum.generic', description: description, noun: noun, name: item_name)
@@ -924,8 +924,8 @@ module CosmosysPoris
 
       rows = enumerated_values.map do |value|
         missing_datum(value, 'meaning', tr('datum.enum_meaning'))
-        missing_datum(value, 'default', tr('datum.enum_default'))
-        "| **#{name(value)}** | #{datum_reference(value, 'meaning')} | #{datum_reference(value, 'default')} |"
+        missing_datum(value, 'value', tr('datum.enum_default'))
+        "| **#{name(value)}** | #{datum_reference(value, 'meaning')} | #{datum_reference(value, 'value')} |"
       end
       ([tr('enum_table.header'), '| --- | --- | --- |'] + rows).join("\n")
     end

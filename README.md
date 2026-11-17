@@ -38,12 +38,15 @@ Gantt and files being disabled. They can be enabled explicitly;
 existing projects retain their module choices.
 
 The runtime resolves an enumerated value's associated data from its project
-variable `<normalized-CSID>_default`, the same key used in generated
-specifications. For example, `pMAX-0008` uses `pMAX_0008_default`. Definitions
+variable `<normalized-CSID>_value`, the same key used in generated
+specifications. For example, `pMAX-0008` uses `pMAX_0008_value`. Definitions
 are limited to the same project-root tree and the current user's visibility.
 Finite numbers become numeric runtime data; missing definitions remain unset.
 Client-supplied enum data does not override the project variable. Changing a
 definition is reflected when the runtime is rebuilt against the current model.
+
+Numeric and text values use the same `_value` suffix when project data are
+needed. The PORIS model's own numeric/text default fields are unchanged.
 
 Optional execution integrations, such as cosmoSys PORIS Architecture, are
 installed separately. The PORIS runtime alone does not actuate hardware.

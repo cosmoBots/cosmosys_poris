@@ -13,11 +13,11 @@ module CosmosysPoris
                        { 'meaning' => 'range_meaning', 'unit' => 'range_unit',
                          'resolution' => 'range_resolution', 'bounds_inclusivity' => 'bounds_inclusivity',
                          'minimum' => 'range_minimum', 'maximum' => 'range_maximum',
-                         'default' => 'range_default', 'tolerance' => 'range_tolerance' }
+                         'value' => 'range_default', 'tolerance' => 'range_tolerance' }
                      when 'text'
-                       { 'meaning' => 'text_meaning', 'constraints' => 'text_constraints', 'default' => 'text_default' }
+                       { 'meaning' => 'text_meaning', 'constraints' => 'text_constraints', 'value' => 'text_default' }
                      else
-                       { 'meaning' => 'enum_meaning', 'default' => 'enum_default' }
+                       { 'meaning' => 'enum_meaning', 'value' => 'enum_default' }
                      end
                    else return {}
                    end

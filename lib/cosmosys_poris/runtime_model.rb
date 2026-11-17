@@ -278,7 +278,7 @@ module CosmosysPoris
       when 'enum'
         dictionary = (@data_dictionaries[value.project.root.id] ||=
           Cosmosys::ProjectDataDictionary.new(project: value.project, user: @user))
-        raw = dictionary.fetch(ProjectDatumReference.key(value, 'default'))&.value
+        raw = dictionary.fetch(ProjectDatumReference.key(value, 'value'))&.value
         number = Float(raw, exception: false) unless raw.nil?
         number&.finite? ? number : raw
       end
