@@ -94,7 +94,7 @@ module CosmosysPoris
         ].map(&:freeze).freeze,
         default_root_tracker: 'poris_sys',
         ods_export_template: 'plugins/cosmosys_poris/assets/templates/ods/poris_export_template.ods',
-        default_disabled_modules: %w[calendar time_tracking news gantt].freeze,
+        default_disabled_modules: %w[calendar time_tracking news boards gantt files].freeze,
         required_modules: %w[issue_tracking].freeze,
         default_report_columns: %w[tracker status pr_value_kind pr_min pr_default pr_max].freeze,
         default_item_list_columns: %w[chapter_label subject tracker status]

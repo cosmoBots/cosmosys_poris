@@ -31,7 +31,11 @@ Paste a complete PORIS preview YAML between the opening and closing lines,
 starting the body at column zero. The diagram is static and also works in report
 exports; no interactive viewer is required.
 
-Version **0.2.7** (experimental).
+Version **0.2.8-dirty** (experimental development).
+
+New PORIS projects default to time tracking, calendars, news, forums,
+Gantt and files being disabled. They can be enabled explicitly;
+existing projects retain their module choices.
 
 The runtime resolves an enumerated value's associated data from its project
 variable `<normalized-CSID>_default`, the same key used in generated
@@ -260,7 +264,8 @@ constructor and automated-validation tabs.
 
 Automated validation uses equally wide result and runtime panels on desktop.
 The results table scrolls independently, keeping the controls and progress
-visible. Set the pause between steps from 0 to 60 seconds (default 0.5); it is
+visible. Set the pause between steps from 0 to 60 seconds in increments of 0.01
+(default 0.5; 0 means no pause); it is
 fixed for the current run. The progress bar marks passed steps green, failures
 red, unverified results amber and skipped steps grey, with separate counters
 and executed/remaining totals. A failure stops the run and keeps that step in
