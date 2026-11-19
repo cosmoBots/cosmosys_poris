@@ -1,8 +1,6 @@
 <%= stylesheet_link_tag 'poris_viewer/style.css', plugin: 'cosmosys_poris' %>
 <%= stylesheet_link_tag 'poris_project.css', plugin: 'cosmosys_poris' %>
 
-<h2><%= l(:label_cosmosys_poris_project_profile) %>: <%= @project.name %></h2>
-
 <% if @issue %>
   <nav class="poris-view-scopes" aria-label="<%= l(:label_cosmosys_poris_view_scopes) %>">
     <% %w[node project node_down].each do |scope| %>

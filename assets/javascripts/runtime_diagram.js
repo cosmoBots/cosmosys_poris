@@ -65,6 +65,38 @@ export function highlightConfiguration(svg, state) {
   }
 }
 
+// Graphviz's outer pad belongs to a standalone sheet, not the runtime panel.
+// Crop to drawing groups, excluding the graph's transparent background polygon,
+// and preserve rendered text scale when changing the viewport dimensions.
+export function trimDrawingPadding(svg) {
+  const box = svg.viewBox.baseVal;
+  if (!(box.width > 0 && box.height > 0) || !svg.getBoundingClientRect().width) return;
+  const matrix = svg.getScreenCTM();
+  if (!matrix) return;
+  const inverse = matrix.inverse();
+  const points = [...svg.querySelectorAll('g.node, g.cluster, g.edge, g.graph > text')].flatMap(group => {
+    const rect = group.getBBox();
+    const matrix = group.getScreenCTM();
+    if (!(rect.width || rect.height) || !matrix) return [];
+    const relative = inverse.multiply(matrix);
+    return [[rect.x, rect.y], [rect.x + rect.width, rect.y],
+      [rect.x, rect.y + rect.height], [rect.x + rect.width, rect.y + rect.height]]
+      .map(([x, y]) => new DOMPoint(x, y).matrixTransform(relative));
+  });
+  if (!points.length) return;
+  const scale = Math.hypot(matrix.a, matrix.b);
+  if (!(scale > 0 && Number.isFinite(scale))) return;
+  const pad = 4; // Keep outlines and arrowheads clear of the viewport edge.
+  const stable = value => Number(value.toFixed(6));
+  const left = stable(Math.min(...points.map(point => point.x)) - pad);
+  const top = stable(Math.min(...points.map(point => point.y)) - pad);
+  const width = stable(Math.max(...points.map(point => point.x)) - left + pad);
+  const height = stable(Math.max(...points.map(point => point.y)) - top + pad);
+  svg.setAttribute('viewBox', `${left} ${top} ${width} ${height}`);
+  svg.setAttribute('width', `${width * scale}px`);
+  svg.setAttribute('height', `${height * scale}px`);
+}
+
 export function initializeRuntimeDiagrams() {
   let current = null;
   let controller;
@@ -95,6 +127,7 @@ export function initializeRuntimeDiagrams() {
       diagram.svg = svg;
       highlightConfiguration(svg, diagram.state);
       root.querySelector('[data-runtime-diagram-image]').replaceChildren(svg);
+      trimDrawingPadding(svg);
       root.dataset.ready = 'true';
     } catch (error) {
       // The original image is retained on failure; never break the runtime.

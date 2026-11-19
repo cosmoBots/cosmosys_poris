@@ -1,6 +1,5 @@
 <section data-poris-runtime-diagram data-url="<%= @combined_diagram_url %>" data-label="<%= l(:label_cosmosys_project_combined_diagram) %>">
   <div class="poris-runtime-diagram-heading">
-    <h3><%= l(:label_cosmosys_project_combined_diagram) %></h3>
     <%= link_to l(:label_cosmosys_poris_open_diagram), @combined_diagram_url, target: '_blank', rel: 'noopener' %>
   </div>
   <div data-runtime-diagram-image tabindex="0" role="region" aria-label="<%= l(:label_cosmosys_project_combined_diagram) %>"><%= image_tag @combined_diagram_url, alt: l(:label_cosmosys_project_combined_diagram), loading: 'lazy' %></div>

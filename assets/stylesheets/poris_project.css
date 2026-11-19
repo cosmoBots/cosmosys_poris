@@ -58,8 +58,12 @@
 .poris-runtime-diagram-heading {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1em;
+}
+
+.poris-project-layout .poris-main > .panel > h2.title {
+  display: none;
 }
 
 .poris-runtime-diagram-heading a {
