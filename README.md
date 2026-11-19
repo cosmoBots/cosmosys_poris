@@ -31,7 +31,7 @@ Paste a complete PORIS preview YAML between the opening and closing lines,
 starting the body at column zero. The diagram is static and also works in report
 exports; no interactive viewer is required.
 
-Version **0.2.9** (experimental).
+Version **0.2.10-dirty** (experimental development).
 
 New PORIS projects default to time tracking, calendars, news, forums,
 Gantt and files being disabled. They can be enabled explicitly;
@@ -53,7 +53,9 @@ installed separately. The PORIS runtime alone does not actuate hardware.
 
 With PORIS Architecture installed and a visible CAD binding configured, the
 configuration and automated-validation tabs can show its CAD model. The model
-follows the runtime's confirmed configuration, not unsaved panel edits. This
+diagram is fitted to a compact overview on desktop so the CAD remains visible
+below it. **Open full diagram** opens the diagram separately at its full size.
+The CAD model follows the runtime's confirmed configuration, not unsaved panel edits. This
 is a session-local visualization, not a physical execution of commands.
 
 PORIS modelling extension for [cosmoSys](https://github.com/cosmoBots/cosmoSys),

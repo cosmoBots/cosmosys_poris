@@ -4,7 +4,7 @@ Redmine::Plugin.register :cosmosys_poris do
   name 'cosmoSys PORIS'
   author 'cosmoBots.eu'
   description 'PORIS model profiles and tooling for cosmoSys.'
-  version '0.2.9'
+  version '0.2.10-dirty'
   url 'https://cosmobots.eu'
   author_url 'https://cosmobots.eu'
 

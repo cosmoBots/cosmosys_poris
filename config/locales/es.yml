@@ -1,4 +1,5 @@
 es:
+  label_cosmosys_poris_open_diagram: Abrir diagrama completo
   label_cosmosys_poris_viewer: Visor PORIS
   label_cosmosys_poris_project_profile: Modelo PORIS
   text_cosmosys_poris_project_profile: Perfil de proyecto para sistemas, parámetros, modos, valores y comandos PORIS.

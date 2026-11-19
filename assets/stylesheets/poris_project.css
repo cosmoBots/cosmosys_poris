@@ -48,6 +48,22 @@
     overflow: auto;
     overscroll-behavior: contain;
   }
+  .poris-project-layout [data-runtime-diagram-image] svg,
+  .poris-project-layout [data-runtime-diagram-image] img {
+    max-height: min(24vh, 240px);
+    object-fit: contain;
+  }
+}
+
+.poris-runtime-diagram-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1em;
+}
+
+.poris-runtime-diagram-heading a {
+  font-size: 0.9em;
 }
 
 .poris-validation-results-scroll {
@@ -65,6 +81,10 @@
 }
 
 @media print {
+  .poris-project-layout [data-runtime-diagram-image] svg,
+  .poris-project-layout [data-runtime-diagram-image] img {
+    max-height: none;
+  }
   .poris-project-layout-with-runtime-sidebar > .poris-project-code-tab,
   .poris-project-layout-with-runtime-sidebar .poris-project-runtime-sidebar,
   .poris-validation-results-scroll {
