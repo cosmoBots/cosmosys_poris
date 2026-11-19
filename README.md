@@ -54,7 +54,8 @@ installed separately. The PORIS runtime alone does not actuate hardware.
 With PORIS Architecture installed and a visible CAD binding configured, the
 configuration and automated-validation tabs can show its CAD model. The model
 diagram has its own vertically bounded scroll area on desktop so the CAD remains visible
-below it. **Open full diagram** opens the diagram separately at its full size.
+below it. Small diagrams keep their native size instead of stretching to fill
+the panel. **Open full diagram** opens the diagram separately at its full size.
 The CAD model follows the runtime's confirmed configuration, not unsaved panel edits. This
 is a session-local visualization, not a physical execution of commands.
 

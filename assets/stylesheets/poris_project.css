@@ -134,6 +134,11 @@
   width: 100%;
   height: auto;
 }
+.poris-project-layout [data-runtime-diagram-image] svg,
+.poris-project-layout [data-runtime-diagram-image] img {
+  width: auto;
+  max-width: 100%;
+}
 [data-runtime-diagram-image] [data-poris-runtime-outline] {
   stroke-width: 2.5px;
   vector-effect: non-scaling-stroke;
