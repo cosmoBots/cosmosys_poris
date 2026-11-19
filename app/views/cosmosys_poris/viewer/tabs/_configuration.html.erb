@@ -5,10 +5,10 @@
          data-csrf-token="<%= form_authenticity_token %>"></div>
     <script type="application/json" class="poris-project-model-xml"><%= raw json_escape(@model_xml.to_json) %></script>
     <script type="application/json" class="poris-runtime-initial-state"><%= raw json_escape(Array(@runtime_state).to_json) %></script>
+    <%= render partial: 'cosmosys_poris/viewer/runtime_state' %>
   </section>
   <aside class="poris-project-diagram">
     <%= render partial: 'cosmosys_poris/viewer/runtime_diagram' %>
     <div data-poris-runtime-view-slot></div>
-    <%= render partial: 'cosmosys_poris/viewer/runtime_state' %>
   </aside>
 </div>

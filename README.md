@@ -58,6 +58,8 @@ below it. Small diagrams keep their native size instead of stretching to fill
 the panel. **Open full diagram** opens the diagram separately at its full size.
 The runtime view trims the diagram's outer blank margin and omits redundant
 headings to leave more space for the model and CAD.
+In Configuration, the runtime state appears below the PORIS form, with the
+diagram and CAD together in the other column.
 The CAD model follows the runtime's confirmed configuration, not unsaved panel edits. This
 is a session-local visualization, not a physical execution of commands.
 
