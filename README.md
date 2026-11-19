@@ -31,7 +31,7 @@ Paste a complete PORIS preview YAML between the opening and closing lines,
 starting the body at column zero. The diagram is static and also works in report
 exports; no interactive viewer is required.
 
-Version **0.2.8** (experimental).
+Version **0.2.9** (experimental).
 
 New PORIS projects default to time tracking, calendars, news, forums,
 Gantt and files being disabled. They can be enabled explicitly;
